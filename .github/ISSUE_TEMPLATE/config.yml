@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Docs
+    url: https://github.com/BetaHuhn/deta-base-orm#readme
+    about: Checkout deta-base-orm's documentation
+  - name: 🚀 Feature Request
+    url: https://github.com/BetaHuhn/deta-base-orm/discussions/new?category=ideas
+    about: Share ideas for new features
+  - name: ❓ Ask a Question
+    url: https://github.com/BetaHuhn/deta-base-orm/discussions/new?category=q-a
+    about: Ask the community for help
