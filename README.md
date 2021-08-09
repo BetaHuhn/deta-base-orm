@@ -30,62 +30,17 @@ Next install Deta Base ORM from the command line:
 npm install deta-base-orm --save
 ```
 
-Now say we like kittens and want to record every kitten we ever meet in [Deta Base](https://docs.deta.sh/docs/base/about). The first thing we need to do is include Deta Base ORM in our project:
+Then import it into your project:
 
 ```ts
 import * as DetaOrm from 'deta-base-orm'
 ```
 
-Then let's define a schema for our kittens:
+### Example
 
-```ts
-type KittenSchema = {
-    name: string,
-    cuteness: number
-}
-```
+Here's a quick example to help you get started!
 
-> Defining a schema only works in TypeScript and it is not validated during the runtime
-
-So far so good. We've got a schema with the properties, name, which will be a string and cuteness which will be a number. The next step is creating our Base:
-
-```ts
-const Kitten = new DetaOrm.Base<KittenSchema>('Kitten')
-```
-
-A base is a class with which we construct documents. In this case, each document will be a kitten with properties and behaviors as declared in our schema. Let's create a kitten document representing the little guy we just met on the sidewalk outside:
-
-```ts
-const line = Kitten.create({
-    name: 'Line',
-    cuteness: 8
-})
-
-console.log(line.name) // 'Line'
-```
-
-Sweet, but we haven't actually saved anything yet! Each document can be saved to the database by calling its save method:
-
-```ts
-await line.save()
-```
-
-Say time goes by and we want to display all the kittens we've seen. We can access all of the kitten documents through our Kitten Base:
-
-```ts
-const kittens = await Kitten.find()
-console.log(kittens) // [{name: 'Line', cuteness: 8}, ...]
-```
-
-If we want to filter our kittens by cuteness, we can specify a query:
-
-```ts
-const cutest = await Kitten.find({ cuteness: 8 })
-console.log(cutest) // [{name: 'Line', cuteness: 8}]
-```
-
-<details>
-<summary>Here's the complete example.</summary>
+Imagine we like kittens and want to record every kitten we ever meet in Deta Base: 
 
 ```ts
 import * as DetaOrm from 'deta-base-orm'
@@ -130,6 +85,8 @@ await sameKitten.delete()
 </details>
 
 Pretty cool right? Congratulations, you now know how almost everything works! 🎉
+
+See below for a more detailed guide.
 
 ## 📚 Usage
 
