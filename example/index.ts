@@ -2,75 +2,41 @@ import * as DetaOrm from '../src/index'
 
 const run = async () => {
 
-	// Define a schema for the model
-	type Schema = {
-		/** The name of the cat */
+	// ✨ Define a schema for the kittens
+	type KittenSchema = {
 		name: string,
-
-		/** The cat's age */
-		age: number
+		cuteness: number
 	}
 
-	// Create the model
-	const Cat = new DetaOrm.Base<Schema>('test_db', {
-		timestamp: true,
-		descending: true
-	})
+	// 🛌 Create our Kitten base
+	const Kitten = new DetaOrm.Base<KittenSchema>('Kitten')
 
-	/* // Create a new document of the model
-	const cat = Cat.create({
-		name: 'Mimi',
-		age: 2
-	})
-
-	// Save the document to Deta Base
-	await cat.save()
-
-	console.log(cat)
-
-	// Delete the document from Deta Base
-	// await cat.delete()
-
-	// or shorter
-
-	// Crate and save a document
-	const cat2 = await Cat.save({
+	// 🐱 Create a new kitten
+	const line = Kitten.create({
 		name: 'Line',
-		age: 19
+		cuteness: 8
 	})
 
-	console.log(cat2)
+	// 🔖 Access the kittens name
+	console.log(line.name) // 'Line'
 
-	// Find all documents
-	const cats = await Cat.find()
-	console.log(cats)
+	// 💾 Save our kitten to the Deta Base
+	await line.save()
 
-	// Find a specific document
-	const sameCat = await Cat.findOne({ id: cat2.id })
+	// 🔍 Find all kittens
+	const kittens = await Kitten.find()
+	console.log(kittens) // [{name: 'Line', cuteness: 8}, ...]
 
-	if (!sameCat) return
+	// 🔑 Find a kitten by its key
+	const sameKitten = await Kitten.findByKey(line.key)
+	console.log(sameKitten) // {name: 'Line', cuteness: 8}
 
-	console.log(sameCat)
+	// 🧵 Find a kitten by its cuteness
+	const cutest = await Kitten.find({ cuteness: 8 })
+	console.log(cutest) // [{name: 'Line', cuteness: 8}]
 
-	// await sameCat.delete()
-
-	const cat3 = await Cat.save({
-		name: 'Sammy2',
-		age: 19
-	}) */
-
-	const cat1 = await Cat.save({
-		name: '1',
-		age: 19
-	})
-
-	const cat2 = await Cat.save({
-		name: '2',
-		age: 19
-	})
-
-	console.log(cat1.key)
-	console.log(cat2.key)
+	// 💘 Delete a kitten
+	await sameKitten.delete()
 }
 
 run()
