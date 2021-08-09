@@ -2,27 +2,53 @@
 import { Deta } from 'deta'
 import DetaBase from 'deta/dist/types/base'
 import dotenv from 'dotenv'
-import { generateId, generateKey } from './random'
+import { generateKey } from './random'
 dotenv.config()
 
+export interface BaseOptions {
+	/** Existing Deta Base instance */
+	db?: DetaBase,
+
+	/** Generate keys in descending order i.e. newest on top */
+	descending?: boolean
+
+	/** Automatically create createdAt field containing the timestamp */
+	timestamp?: boolean
+}
+
 export type DocumentResponse<Schema> = Document<Schema> & Schema & {
-	/** The ascending key of the document */
-	key: string,
+	/** The unique key of the document */
+	key: string
 
-	/**  The unique id of the document */
-	id: string,
+	/** 
+	 * Timestamp of when the document was created
+	 * 
+	 * Note: Only set when timestamp option is true
+	 * */
+	createdAt?: number
+}
 
-	/** The date when the document was created */
-	addedAt: string
+
+interface Options {
+	ascending: boolean
+	timestamp: boolean
 }
 
 export class Base <Schema> {
 	// eslint-disable-next-line no-undef
 	_baseName: string
 	_db: DetaBase
+	_opts: Options
 
-	constructor(name: string, db?: DetaBase) {
+	constructor(name: string, opts?: BaseOptions) {
 		this._baseName = name
+
+		const ascending = opts?.descending !== true
+		const timestamp = opts?.timestamp || false
+
+		this._opts = { ascending, timestamp }
+
+		const db = opts?.db
 
 		if (db !== undefined) {
 			this._db = db
@@ -36,6 +62,7 @@ export class Base <Schema> {
 	create(data: Schema) {
 		Document._baseName = this._baseName
 		Document._db = this._db
+		Document._opts = this._opts
 		return Document.create<Schema>(data)
 	}
 
@@ -149,12 +176,16 @@ export class Document <Schema> {
 	[k: string]: any
 	static _baseName: string
 	static _db: DetaBase
+	static _opts: Options
 
 	constructor(data: Schema) {
 		Object.assign(this, data)
-		this.id = this.id || generateId()
-		this.key = this.key || generateKey(false)
-		this.addedAt = this.addedAt || new Date()
+		this.key = this.key || generateKey(Document._opts.ascending)
+
+		// Add timestamp to document
+		if (Document._opts.timestamp) {
+			this.createdAt = Date.now()
+		}
 	}
 
 	update(changes: any) {

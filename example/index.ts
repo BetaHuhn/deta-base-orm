@@ -12,9 +12,12 @@ const run = async () => {
 	}
 
 	// Create the model
-	const Cat = new DetaOrm.Base<Schema>('Cat')
+	const Cat = new DetaOrm.Base<Schema>('test_db', {
+		timestamp: true,
+		descending: true
+	})
 
-	// Create a new document of the model
+	/* // Create a new document of the model
 	const cat = Cat.create({
 		name: 'Mimi',
 		age: 2
@@ -25,10 +28,8 @@ const run = async () => {
 
 	console.log(cat)
 
-	cat.speak()
-
 	// Delete the document from Deta Base
-	await cat.delete()
+	// await cat.delete()
 
 	// or shorter
 
@@ -51,7 +52,25 @@ const run = async () => {
 
 	console.log(sameCat)
 
-	await sameCat.delete()
+	// await sameCat.delete()
+
+	const cat3 = await Cat.save({
+		name: 'Sammy2',
+		age: 19
+	}) */
+
+	const cat1 = await Cat.save({
+		name: '1',
+		age: 19
+	})
+
+	const cat2 = await Cat.save({
+		name: '2',
+		age: 19
+	})
+
+	console.log(cat1.key)
+	console.log(cat2.key)
 }
 
 run()
