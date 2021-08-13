@@ -1,7 +1,7 @@
+/* eslint-disable valid-jsdoc */
 import { Deta } from 'deta'
 import DetaBase from 'deta/dist/types/base'
 import dotenv from 'dotenv'
-import { SetOptional } from 'type-fest'
 import { generateKey } from './random'
 dotenv.config()
 
@@ -17,20 +17,20 @@ export interface BaseOptions {
 }
 
 /**
- * The data of a document 
+ * The data of a document
 */
 export type BaseDocument<Schema> = Document<Schema> & Schema & {
-	/** 
+	/**
 	 * The unique key of the document
-	 * 
+	 *
 	 * Either auto generated or the one you provided.
-	 * 
+	 *
 	 * */
 	key: string
 
-	/** 
+	/**
 	 * Timestamp of when the document was created
-	 * 
+	 *
 	 * Note: Only set when timestamp option is true
 	 * */
 	createdAt?: number
@@ -40,17 +40,17 @@ export type BaseDocument<Schema> = Document<Schema> & Schema & {
  * Query to use for finding documents
 */
 export type Query<Schema> = Partial<Schema | {
-	/** 
+	/**
 	 * The unique key of the document
-	 * 
+	 *
 	 * Either auto generated or the one you provided.
-	 * 
+	 *
 	 * */
 	key?: string
 
-	/** 
+	/**
 	 * Timestamp of when the document was created
-	 * 
+	 *
 	 * Note: Only set when timestamp option is true
 	 * */
 	createdAt?: number
@@ -61,7 +61,7 @@ interface ParsedOptions {
 	timestamp: boolean
 }
 
-/** 
+/**
  * Create and interact with a Deta Base
 */
 export class Base <Schema> {
@@ -69,10 +69,10 @@ export class Base <Schema> {
 	_db: DetaBase
 	_opts: ParsedOptions
 
-	/** 
+	/**
 	 * Create a new Base with the provided name, schema and options
-	 * @param name Name of the Base
-	 * @param opts Options object
+	 * @param {string} name Name of the Base
+	 * @param {BaseOptions} opts Options object
 	*/
 	constructor(name: string, opts?: BaseOptions) {
 		this._baseName = name
@@ -96,10 +96,10 @@ export class Base <Schema> {
 
 	/**
 	 * Create a new document with the provided data based on the Base schema
-	 * @param data Object representing the data of the new document
-	 * @returns Document
+	 * @param {Schema} data Object representing the data of the new document
+	 * @returns {BaseDocument} Document
 	 */
-	create(data: Schema) {
+	create(data: Schema):BaseDocument<Schema> {
 		// Set configs
 		Document._baseName = this._baseName
 		Document._db = this._db
@@ -111,10 +111,10 @@ export class Base <Schema> {
 
 	/**
 	 * Helper function to create and immediately save a new document
-	 * @param data Object representing the data of the new document
-	 * @returns Document
+	 * @param {Schema} data Object representing the data of the new document
+	 * @returns {BaseDocument} Document
 	 */
-	async save(data: Schema) {
+	async save(data: Schema): Promise<BaseDocument<Schema>> {
 		const doc = this.create(data)
 
 		await doc.save()
@@ -122,13 +122,13 @@ export class Base <Schema> {
 		return doc
 	}
 
-	/** 
+	/**
 	 * Wrapper around the Deta Base SDK fetch method
-	 * 
+	 *
 	 * Automatically gets all items until the limit or since the last item
 	 * @internal
 	*/
-	async _fetch(query: any = {}, limit?: number, last?: string) {
+	async _fetch(query: any = {}, limit?: number, last?: string): Promise<any[]> {
 		let res = await this._db.fetch(query, limit ? { limit, last } : undefined)
 		let items: Array<any> = res.items
 
@@ -152,15 +152,15 @@ export class Base <Schema> {
 		return items
 	}
 
-	/** 
+	/**
 	 * Find all documents matching the query.
-	 * 
+	 *
 	 * Use limit and last to paginate the result.
-	 * 
+	 *
 	 * @param query A query object
 	 * @returns Array of Documents
 	*/
-	async find(query: Query<Schema> = {}, limit?: number, last?: string) {
+	async find(query: Query<Schema> = {}, limit?: number, last?: string): Promise<BaseDocument<Schema>[]> {
 		const items = await this._fetch(query, limit, last)
 
 		if (!items) return []
@@ -172,9 +172,9 @@ export class Base <Schema> {
 		return res
 	}
 
-	/** 
+	/**
 	 * Find a single document matching the query.
-	 * 
+	 *
 	 * @param query A query object
 	 * @returns Document
 	*/
@@ -186,24 +186,24 @@ export class Base <Schema> {
 		return this.create(res.items[0] as any)
 	}
 
-	/** 
+	/**
 	 * Find a single document by its key
-	 * 
+	 *
 	 * @param key The key of the document
 	 * @returns Document
 	*/
-	async findByKey(key: string) {
+	async findByKey(key: string): Promise<BaseDocument<Schema> | undefined> {
 		return this.findOne({ key })
 	}
 
-	/** 
+	/**
 	 * Find a single document matching the query and update it with the provided data.
-	 * 
+	 *
 	 * @param query A query object
 	 * @param data The data to update
 	 * @returns Document
 	*/
-	async findOneAndUpdate(query: Query<Schema> = {}, data: any) {
+	async findOneAndUpdate(query: Query<Schema> = {}, data: Partial<Schema>): Promise<BaseDocument<Schema>> {
 		const item = await this.findOne(query)
 		if (item === undefined) throw new Error('No item with that id exists')
 
@@ -218,14 +218,14 @@ export class Base <Schema> {
 		return item
 	}
 
-	/** 
+	/**
 	 * Find a single document by its key and update it with the provided data.
-	 * 
+	 *
 	 * @param key The key of the document
 	 * @param data The data to update
 	 * @returns Document
 	*/
-	async findByKeyAndUpdate(key: string, data: any) {
+	async findByKeyAndUpdate(key: string, data: Partial<Schema>): Promise<BaseDocument<Schema>> {
 		const item = await this.findByKey(key)
 		if (!item) throw new Error('No item with that id exists')
 
@@ -240,24 +240,24 @@ export class Base <Schema> {
 		return item
 	}
 
-	/** 
+	/**
 	 * Find a single document by its key and delete it.
-	 * 
+	 *
 	 * @param key The key of the document
 	*/
-	async findByKeyAndDelete(key: string) {
+	async findByKeyAndDelete(key: string): Promise<void> {
 		const item = await this.findByKey(key)
 		if (!item) throw new Error('No item with that id exists')
 
 		await this._db.delete(item.key)
 	}
 
-	/** 
+	/**
 	 * Find a single document matching the query and delete it.
-	 * 
+	 *
 	 * @param query A query object
 	*/
-	async findOneAndDelete(query: Query<Schema> = {}) {
+	async findOneAndDelete(query: Query<Schema> = {}): Promise<void> {
 		const item = await this.findOne(query)
 		if (!item) throw new Error('No item with that id exists')
 
@@ -265,7 +265,7 @@ export class Base <Schema> {
 	}
 }
 
-/** 
+/**
  * Represents a Document with all of its data and methods
  * @internal
 */
@@ -276,9 +276,9 @@ class Document <Schema> {
 	static _db: DetaBase
 	static _opts: ParsedOptions
 
-	/** 
+	/**
 	 * Create a new Document instance with the provided data.
-	 * 
+	 *
 	 * Will auto generate a key if it is missing.
 	 * @internal
 	*/
@@ -292,24 +292,25 @@ class Document <Schema> {
 		}
 	}
 
-	/** 
+	/**
 	 * Update the document with the provided data
-	 * 
+	 *
 	 * @param data The data to update
 	*/
 	update(data: any) {
+		return data
 	}
 
-	/** 
+	/**
 	 * Delete the document
 	*/
 	async delete() {
 		await Document._db.delete(this.key as string)
 	}
 
-	/** 
+	/**
 	 * Save the Document to the database
-	 * 
+	 *
 	 * @returns Document
 	*/
 	async save() {
@@ -325,9 +326,9 @@ class Document <Schema> {
 		return this
 	}
 
-	/** 
+	/**
 	 * Create a new Document
-	 * 
+	 *
 	 * Is used instead of the contructor in order to return the data with a different type, ref: https://git.io/JR2Yc
 	 * @internal
 	*/

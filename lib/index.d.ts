@@ -56,20 +56,20 @@ export declare class Base<Schema> {
     _opts: ParsedOptions;
     /**
      * Create a new Base with the provided name, schema and options
-     * @param name Name of the Base
-     * @param opts Options object
+     * @param {string} name Name of the Base
+     * @param {BaseOptions} opts Options object
     */
     constructor(name: string, opts?: BaseOptions);
     /**
      * Create a new document with the provided data based on the Base schema
-     * @param data Object representing the data of the new document
-     * @returns Document
+     * @param {Schema} data Object representing the data of the new document
+     * @returns {BaseDocument} Document
      */
     create(data: Schema): BaseDocument<Schema>;
     /**
      * Helper function to create and immediately save a new document
-     * @param data Object representing the data of the new document
-     * @returns Document
+     * @param {Schema} data Object representing the data of the new document
+     * @returns {BaseDocument} Document
      */
     save(data: Schema): Promise<BaseDocument<Schema>>;
     /**
@@ -109,7 +109,7 @@ export declare class Base<Schema> {
      * @param data The data to update
      * @returns Document
     */
-    findOneAndUpdate(query: Query<Schema> | undefined, data: any): Promise<BaseDocument<Schema>>;
+    findOneAndUpdate(query: Query<Schema> | undefined, data: Partial<Schema>): Promise<BaseDocument<Schema>>;
     /**
      * Find a single document by its key and update it with the provided data.
      *
@@ -117,7 +117,7 @@ export declare class Base<Schema> {
      * @param data The data to update
      * @returns Document
     */
-    findByKeyAndUpdate(key: string, data: any): Promise<BaseDocument<Schema>>;
+    findByKeyAndUpdate(key: string, data: Partial<Schema>): Promise<BaseDocument<Schema>>;
     /**
      * Find a single document by its key and delete it.
      *
@@ -152,7 +152,7 @@ declare class Document<Schema> {
      *
      * @param data The data to update
     */
-    update(data: any): void;
+    update(data: any): any;
     /**
      * Delete the document
     */
