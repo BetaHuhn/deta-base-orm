@@ -61,11 +61,138 @@ interface ParsedOptions {
 	timestamp: boolean
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
+type SchemaType = string | number | boolean | object | SchemaType[]
+
+interface SchemaOptions {
+	type: string
+	required?: boolean
+	default?: SchemaType
+}
+
+export interface BaseSchema {
+	[key: string]: string | BaseSchema | SchemaOptions
+}
+
+/* Internal Types */
+interface ParsedSchemaOptions {
+	type: string
+	required: boolean
+	__end: boolean
+	default?: SchemaType
+}
+
+interface ParsedBaseSchema {
+	[key: string]: ParsedSchemaOptions
+}
+
+/**
+ * Create a schema for your Base
+*/
+export class Schema<SchemaType> {
+	schema: ParsedBaseSchema
+
+	constructor(schema: BaseSchema) {
+		this.schema = this.parse(schema)
+	}
+
+	parse(schema: BaseSchema): ParsedBaseSchema {
+		const parsedSchema: any = {}
+		const validTypes = [ 'string', 'number', 'boolean', 'array', 'object' ]
+
+		Object.entries(schema).forEach(([ key, value ]) => {
+
+			// Parse type shorthand notation
+			if (typeof value === 'string') {
+				parsedSchema[key] = { __end: true, type: value, required: true, default: undefined }
+
+			// Recursivly parse none schema object
+			} else if (typeof value === 'object' && (!value.type || typeof value.type !== 'string')) {
+				parsedSchema[key] = this.parse(value as any)
+
+			// Parse schema object
+			} else {
+				parsedSchema[key] = {
+					__end: true,
+					type: value.type || 'string',
+					required: value.required !== undefined ? value.required : value.default === undefined,
+					default: value.default !== undefined ? value.default : undefined
+				}
+			}
+
+			// Verify that types are valid
+			if (typeof parsedSchema[key].type === 'string' && !validTypes.includes(parsedSchema[key].type)) {
+				throw new Error(`Invalid type "${ parsedSchema[key].type }"`)
+			}
+		})
+
+		return parsedSchema
+	}
+
+	validate(data: SchemaType, partialSchema?: ParsedBaseSchema): { errors: string[], result: SchemaType } {
+		let errors: string[] = []
+		let result: Partial<SchemaType> = {}
+
+		const schema = partialSchema || this.schema
+
+		// Helper function to set keys without overwriting whole object
+		const setRes = (key: string, value: any) => {
+			result = { ...result, [key]: value }
+		}
+
+		// Helper function to check JS types
+		const checkType = (type: string, value: any) => {
+			if (type === 'string') {
+				return typeof value === 'string'
+			} else if (type === 'number') {
+				return typeof value === 'number'
+			} else if (type === 'boolean') {
+				return typeof value === 'boolean'
+			} else if (type === 'array') {
+				return Array.isArray(value)
+			} else if (type === 'object') {
+				return typeof value === 'object'
+			}
+		}
+
+		Object.entries(schema).forEach(([ key, value ]) => {
+
+			// If the value is not a schema object, we need to validate it recursivly
+			if (typeof value === 'object' && value.__end === undefined) {
+				const obj = this.validate((data as any)[key], value as any)
+				errors = errors.concat(obj.errors)
+				setRes(key, obj.result)
+
+			// Check if the value is required and is present
+			} else if (value.required && (data as any)[key] === undefined) {
+				errors.push(`Missing required field "${ key }"`)
+
+			// If no value use default value if present
+			} else if (data === undefined || (data as any)[key] === undefined) {
+				if (schema[key].default !== undefined) {
+					setRes(key, schema[key].default)
+				}
+
+			// If the value is present, validate its type
+			} else if (!checkType(value.type, (data as any)[key])) {
+				errors.push(`Invalid type for "${ key }": expected "${ value.type }", got "${ typeof (data as any)[key] }"`)
+
+			// Use the actual value
+			} else {
+				setRes(key, (data as any)[key])
+			}
+		})
+
+		return { errors, result: result as SchemaType }
+	}
+}
+
 /**
  * Create and interact with a Deta Base
 */
-export class Base <Schema> {
+export class Base <SchemaType> {
 	_baseName: string
+	_baseSchema: Schema<SchemaType>
 	_db: DetaBase
 	_opts: ParsedOptions
 
@@ -74,8 +201,14 @@ export class Base <Schema> {
 	 * @param {string} name Name of the Base
 	 * @param {BaseOptions} opts Options object
 	*/
-	constructor(name: string, opts?: BaseOptions) {
+	constructor(name: string, schema: BaseSchema | Schema<SchemaType>, opts?: BaseOptions) {
 		this._baseName = name
+
+		if (schema instanceof Schema) {
+			this._baseSchema = schema as Schema<SchemaType>
+		} else {
+			this._baseSchema = new Schema(schema as BaseSchema)
+		}
 
 		// Parse options
 		const ascending = opts?.descending !== true
@@ -96,25 +229,35 @@ export class Base <Schema> {
 
 	/**
 	 * Create a new document with the provided data based on the Base schema
-	 * @param {Schema} data Object representing the data of the new document
+	 * @param {SchemaType} data Object representing the data of the new document
 	 * @returns {BaseDocument} Document
 	 */
-	create(data: Schema):BaseDocument<Schema> {
+	create(rawData: SchemaType):BaseDocument<SchemaType> {
 		// Set configs
 		Document._baseName = this._baseName
 		Document._db = this._db
 		Document._opts = this._opts
 
+		const validated = this._baseSchema.validate(rawData)
+
+		// Log all errors and throw first one
+		if (validated.errors && validated.errors.length > 0) {
+			validated.errors.forEach((err) => console.error('Validation error: ' + err))
+			throw new Error(validated.errors[0])
+		}
+
+		const data = validated.result
+
 		// Create new document with data
-		return Document.create<Schema>(data)
+		return new Document<SchemaType>(data) as BaseDocument<SchemaType>
 	}
 
 	/**
 	 * Helper function to create and immediately save a new document
-	 * @param {Schema} data Object representing the data of the new document
+	 * @param {SchemaType} data Object representing the data of the new document
 	 * @returns {BaseDocument} Document
 	 */
-	async save(data: Schema): Promise<BaseDocument<Schema>> {
+	async save(data: SchemaType): Promise<BaseDocument<SchemaType>> {
 		const doc = this.create(data)
 
 		await doc.save()
@@ -160,7 +303,7 @@ export class Base <Schema> {
 	 * @param query A query object
 	 * @returns Array of Documents
 	*/
-	async find(query: Query<Schema> = {}, limit?: number, last?: string): Promise<BaseDocument<Schema>[]> {
+	async find(query: Query<SchemaType> = {}, limit?: number, last?: string): Promise<BaseDocument<SchemaType>[]> {
 		const items = await this._fetch(query, limit, last)
 
 		if (!items) return []
@@ -178,7 +321,7 @@ export class Base <Schema> {
 	 * @param query A query object
 	 * @returns Document
 	*/
-	async findOne(query: Query<Schema> = {}): Promise<BaseDocument<Schema> | undefined> {
+	async findOne(query: Query<SchemaType> = {}): Promise<BaseDocument<SchemaType> | undefined> {
 		const res = await this._db.fetch(query as any, { limit: 1 })
 
 		if (res.count < 1) return undefined
@@ -192,8 +335,12 @@ export class Base <Schema> {
 	 * @param key The key of the document
 	 * @returns Document
 	*/
-	async findByKey(key: string): Promise<BaseDocument<Schema> | undefined> {
-		return this.findOne({ key })
+	async findByKey(key: string): Promise<BaseDocument<SchemaType> | undefined> {
+		const res = await this._db.get(key)
+
+		if (!res) return undefined
+
+		return this.create(res as any)
 	}
 
 	/**
@@ -203,7 +350,7 @@ export class Base <Schema> {
 	 * @param data The data to update
 	 * @returns Document
 	*/
-	async findOneAndUpdate(query: Query<Schema> = {}, data: Partial<Schema>): Promise<BaseDocument<Schema>> {
+	async findOneAndUpdate(query: Query<SchemaType> = {}, data: Partial<SchemaType>): Promise<BaseDocument<SchemaType>> {
 		const item = await this.findOne(query)
 		if (item === undefined) throw new Error('No item with that id exists')
 
@@ -225,7 +372,7 @@ export class Base <Schema> {
 	 * @param data The data to update
 	 * @returns Document
 	*/
-	async findByKeyAndUpdate(key: string, data: Partial<Schema>): Promise<BaseDocument<Schema>> {
+	async findByKeyAndUpdate(key: string, data: Partial<SchemaType>): Promise<BaseDocument<SchemaType>> {
 		const item = await this.findByKey(key)
 		if (!item) throw new Error('No item with that id exists')
 
@@ -257,7 +404,7 @@ export class Base <Schema> {
 	 *
 	 * @param query A query object
 	*/
-	async findOneAndDelete(query: Query<Schema> = {}): Promise<void> {
+	async findOneAndDelete(query: Query<SchemaType> = {}): Promise<void> {
 		const item = await this.findOne(query)
 		if (!item) throw new Error('No item with that id exists')
 
@@ -269,7 +416,7 @@ export class Base <Schema> {
  * Represents a Document with all of its data and methods
  * @internal
 */
-class Document <Schema> {
+class Document <SchemaType> {
 	// eslint-disable-next-line no-undef
 	[k: string]: any
 	static _baseName: string
@@ -282,7 +429,7 @@ class Document <Schema> {
 	 * Will auto generate a key if it is missing.
 	 * @internal
 	*/
-	constructor(data: Schema) {
+	constructor(data: SchemaType) {
 		Object.assign(this, data)
 		this.key = this.key || generateKey(Document._opts.ascending)
 
@@ -324,15 +471,5 @@ class Document <Schema> {
 		if (!newItem) throw new Error('Could not create item')
 
 		return this
-	}
-
-	/**
-	 * Create a new Document
-	 *
-	 * Is used instead of the contructor in order to return the data with a different type, ref: https://git.io/JR2Yc
-	 * @internal
-	*/
-	static create <Schema>(data: any) {
-		return new Document<Schema>(data) as BaseDocument<Schema>
 	}
 }

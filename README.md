@@ -46,13 +46,13 @@ Imagine we like kittens and want to record every kitten we ever meet in Deta Bas
 import * as DetaOrm from 'deta-base-orm'
 
 // ✨ Define a schema for the kittens
-type KittenSchema = {
-    name: string,
-    cuteness: number
-}
+const KittenSchema = new DetaOrm.Schema({
+    name: 'string',
+    cuteness: 'number'
+})
 
 // 🛌 Create our Kitten base
-const Kitten = new DetaOrm.Base<KittenSchema>('Kitten')
+const Kitten = new DetaOrm.Base('Kitten', KittenSchema)
 
 // 🐱 Create a new kitten
 const line = Kitten.create({
@@ -93,18 +93,20 @@ See below for a more detailed guide.
 ### Defining a schema
 
 ```ts
-type KittenSchema = {
-    name: string
-    age: number
-    hungry: boolean
-    friends: Array<string>
-}
+const schema = new DetaOrm.Schema({
+    name: 'string',
+    age: 'number',
+    hungry: {
+        type: 'boolean',
+        default: false
+    }
+})
 ```
 
 ### Creating a Base
 
 ```ts
-const Base = new DetaOrm.Base<Schema>('name')
+const Base = new DetaOrm.Base('name', schema)
 ```
 
 ### Creating a new document
@@ -113,8 +115,7 @@ const Base = new DetaOrm.Base<Schema>('name')
 const document = Base.create({
     name: 'Maxi',
     age: 5,
-    hungry: true,
-    friends: ['Richard']
+    hungry: true
 })
 ```
 
@@ -130,8 +131,7 @@ You can also create and save a document in one go:
 const document = Base.save({
     name: 'Maxi',
     age: 5,
-    hungry: true,
-    friends: ['Richard']
+    hungry: true
 })
 ```
 
@@ -177,7 +177,7 @@ If you already have a Deta Base instance you can pass it to Deta Base ORM to reu
 const deta = Deta()
 const db = deta.Base(name)
 
-const Base = new DetaOrm.Base<Schema>(name, db)
+const Base = new DetaOrm.Base(name, schema, { db })
 ```
 
 ## ✨ Planned features

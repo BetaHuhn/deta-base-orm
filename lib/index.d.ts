@@ -47,11 +47,42 @@ interface ParsedOptions {
     ascending: boolean;
     timestamp: boolean;
 }
+declare type SchemaType = string | number | boolean | object | SchemaType[];
+interface SchemaOptions {
+    type: string;
+    required?: boolean;
+    default?: SchemaType;
+}
+export interface BaseSchema {
+    [key: string]: string | BaseSchema | SchemaOptions;
+}
+interface ParsedSchemaOptions {
+    type: string;
+    required: boolean;
+    __end: boolean;
+    default?: SchemaType;
+}
+interface ParsedBaseSchema {
+    [key: string]: ParsedSchemaOptions;
+}
+/**
+ * Create a schema for your Base
+*/
+export declare class Schema<SchemaType> {
+    schema: ParsedBaseSchema;
+    constructor(schema: BaseSchema);
+    parse(schema: BaseSchema): ParsedBaseSchema;
+    validate(data: SchemaType, partialSchema?: ParsedBaseSchema): {
+        errors: string[];
+        result: SchemaType;
+    };
+}
 /**
  * Create and interact with a Deta Base
 */
-export declare class Base<Schema> {
+export declare class Base<SchemaType> {
     _baseName: string;
+    _baseSchema: Schema<SchemaType>;
     _db: DetaBase;
     _opts: ParsedOptions;
     /**
@@ -59,19 +90,19 @@ export declare class Base<Schema> {
      * @param {string} name Name of the Base
      * @param {BaseOptions} opts Options object
     */
-    constructor(name: string, opts?: BaseOptions);
+    constructor(name: string, schema: BaseSchema | Schema<SchemaType>, opts?: BaseOptions);
     /**
      * Create a new document with the provided data based on the Base schema
-     * @param {Schema} data Object representing the data of the new document
+     * @param {SchemaType} data Object representing the data of the new document
      * @returns {BaseDocument} Document
      */
-    create(data: Schema): BaseDocument<Schema>;
+    create(rawData: SchemaType): BaseDocument<SchemaType>;
     /**
      * Helper function to create and immediately save a new document
-     * @param {Schema} data Object representing the data of the new document
+     * @param {SchemaType} data Object representing the data of the new document
      * @returns {BaseDocument} Document
      */
-    save(data: Schema): Promise<BaseDocument<Schema>>;
+    save(data: SchemaType): Promise<BaseDocument<SchemaType>>;
     /**
      * Wrapper around the Deta Base SDK fetch method
      *
@@ -87,21 +118,21 @@ export declare class Base<Schema> {
      * @param query A query object
      * @returns Array of Documents
     */
-    find(query?: Query<Schema>, limit?: number, last?: string): Promise<BaseDocument<Schema>[]>;
+    find(query?: Query<SchemaType>, limit?: number, last?: string): Promise<BaseDocument<SchemaType>[]>;
     /**
      * Find a single document matching the query.
      *
      * @param query A query object
      * @returns Document
     */
-    findOne(query?: Query<Schema>): Promise<BaseDocument<Schema> | undefined>;
+    findOne(query?: Query<SchemaType>): Promise<BaseDocument<SchemaType> | undefined>;
     /**
      * Find a single document by its key
      *
      * @param key The key of the document
      * @returns Document
     */
-    findByKey(key: string): Promise<BaseDocument<Schema> | undefined>;
+    findByKey(key: string): Promise<BaseDocument<SchemaType> | undefined>;
     /**
      * Find a single document matching the query and update it with the provided data.
      *
@@ -109,7 +140,7 @@ export declare class Base<Schema> {
      * @param data The data to update
      * @returns Document
     */
-    findOneAndUpdate(query: Query<Schema> | undefined, data: Partial<Schema>): Promise<BaseDocument<Schema>>;
+    findOneAndUpdate(query: Query<SchemaType> | undefined, data: Partial<SchemaType>): Promise<BaseDocument<SchemaType>>;
     /**
      * Find a single document by its key and update it with the provided data.
      *
@@ -117,7 +148,7 @@ export declare class Base<Schema> {
      * @param data The data to update
      * @returns Document
     */
-    findByKeyAndUpdate(key: string, data: Partial<Schema>): Promise<BaseDocument<Schema>>;
+    findByKeyAndUpdate(key: string, data: Partial<SchemaType>): Promise<BaseDocument<SchemaType>>;
     /**
      * Find a single document by its key and delete it.
      *
@@ -129,13 +160,13 @@ export declare class Base<Schema> {
      *
      * @param query A query object
     */
-    findOneAndDelete(query?: Query<Schema>): Promise<void>;
+    findOneAndDelete(query?: Query<SchemaType>): Promise<void>;
 }
 /**
  * Represents a Document with all of its data and methods
  * @internal
 */
-declare class Document<Schema> {
+declare class Document<SchemaType> {
     [k: string]: any;
     static _baseName: string;
     static _db: DetaBase;
@@ -146,7 +177,7 @@ declare class Document<Schema> {
      * Will auto generate a key if it is missing.
      * @internal
     */
-    constructor(data: Schema);
+    constructor(data: SchemaType);
     /**
      * Update the document with the provided data
      *
@@ -163,12 +194,5 @@ declare class Document<Schema> {
      * @returns Document
     */
     save(): Promise<this>;
-    /**
-     * Create a new Document
-     *
-     * Is used instead of the contructor in order to return the data with a different type, ref: https://git.io/JR2Yc
-     * @internal
-    */
-    static create<Schema>(data: any): BaseDocument<Schema>;
 }
 export {};

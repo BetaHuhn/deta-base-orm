@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import * as DetaOrm from '../src/index'
 
 const run = async () => {
@@ -5,11 +6,19 @@ const run = async () => {
 	// ✨ Define a schema for the kittens
 	type KittenSchema = {
 		name: string,
-		cuteness: number
+		cuteness?: number
 	}
 
+	const schema = new DetaOrm.Schema<KittenSchema>({
+		name: 'string',
+		cuteness: {
+			type: 'number',
+			default: 0
+		}
+	})
+
 	// 🛌 Create our Kitten base
-	const Kitten = new DetaOrm.Base<KittenSchema>('Kitten')
+	const Kitten = new DetaOrm.Base('Kitten', schema)
 
 	// 🐱 Create a new kitten
 	const line = Kitten.create({
