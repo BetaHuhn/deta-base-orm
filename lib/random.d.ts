@@ -6,5 +6,7 @@
  * to make sure key is sequential. Key will be timestamp in hex plus a 5 char random id.
  *
  * Note: Because of the timestamp in ms, key is only sequential until a certain point i.e two keys generated in the same ms.
+ * @param {boolean} ascending
+ * @returns {string} randomKey
  */
 export declare const generateKey: (ascending: boolean) => string;
