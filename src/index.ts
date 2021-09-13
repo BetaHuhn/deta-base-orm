@@ -62,16 +62,19 @@ interface ParsedOptions {
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-type SchemaType = string | number | boolean | object | SchemaType[]
+type BaseValueType = string | number | boolean | object | BaseValueType[]
 
 interface SchemaOptions {
 	type: string
 	required?: boolean
-	default?: SchemaType
+	default?: BaseValueType
+	base?: Base<BaseSchema>
+	baseName?: string
+	baseSchema?: Schema<BaseSchema>
 }
 
 export interface BaseSchema {
-	[key: string]: string | BaseSchema | SchemaOptions
+	[key: string]: string | BaseSchema | SchemaOptions | Base<BaseSchema>
 }
 
 /* Internal Types */
@@ -79,7 +82,10 @@ interface ParsedSchemaOptions {
 	type: string
 	required: boolean
 	__end: boolean
-	default?: SchemaType
+	default?: BaseValueType
+	base?: Base<BaseSchema>
+	baseName?: string
+	baseSchema?: Schema<BaseSchema>
 }
 
 interface ParsedBaseSchema {
@@ -98,13 +104,29 @@ export class Schema<SchemaType> {
 
 	parse(schema: BaseSchema): ParsedBaseSchema {
 		const parsedSchema: any = {}
-		const validTypes = [ 'string', 'number', 'boolean', 'array', 'object' ]
+		const validTypes = [ 'string', 'number', 'boolean', 'array', 'object', 'base' ]
 
 		Object.entries(schema).forEach(([ key, value ]) => {
 
 			// Parse type shorthand notation
 			if (typeof value === 'string') {
-				parsedSchema[key] = { __end: true, type: value, required: true, default: undefined }
+				parsedSchema[key] = {
+					__end: true,
+					type: value,
+					required: true,
+					default: undefined
+				}
+
+			// Parse Base shorthand notation
+			} else if (value instanceof Base) {
+				parsedSchema[key] = {
+					__end: true,
+					type: 'base',
+					baseName: value._baseName,
+					baseSchema: value._baseSchema,
+					required: true,
+					default: undefined
+				}
 
 			// Recursivly parse none schema object
 			} else if (typeof value === 'object' && (!value.type || typeof value.type !== 'string')) {
@@ -117,6 +139,16 @@ export class Schema<SchemaType> {
 					type: value.type || 'string',
 					required: value.required !== undefined ? value.required : value.default === undefined,
 					default: value.default !== undefined ? value.default : undefined
+				}
+
+				if (value.type === 'base') {
+					if (value.base) {
+						parsedSchema[key].baseName = (value.base as Base<BaseSchema>)._baseName
+						parsedSchema[key].baseSchema = (value.base as Base<BaseSchema>)._baseSchema
+					} else {
+						parsedSchema[key].baseName = value.baseName !== undefined ? value.baseName : undefined
+						parsedSchema[key].baseSchema = value.baseSchema !== undefined ? value.baseSchema : undefined
+					}
 				}
 			}
 
@@ -152,6 +184,8 @@ export class Schema<SchemaType> {
 				return Array.isArray(value)
 			} else if (type === 'object') {
 				return typeof value === 'object'
+			} else if (type === 'base') {
+				return typeof value === 'string'
 			}
 		}
 
@@ -249,7 +283,7 @@ export class Base <SchemaType> {
 		const data = validated.result
 
 		// Create new document with data
-		return new Document<SchemaType>(data) as BaseDocument<SchemaType>
+		return new Document<SchemaType>(data, this._baseSchema) as BaseDocument<SchemaType>
 	}
 
 	/**
@@ -352,7 +386,7 @@ export class Base <SchemaType> {
 	*/
 	async findOneAndUpdate(query: Query<SchemaType> = {}, data: Partial<SchemaType>): Promise<BaseDocument<SchemaType>> {
 		const item = await this.findOne(query)
-		if (item === undefined) throw new Error('No item with that id exists')
+		if (item === undefined) throw new Error('No item with that key exists')
 
 		// Prevent accidently changing immutable attributes
 		const newItem = {
@@ -374,7 +408,7 @@ export class Base <SchemaType> {
 	*/
 	async findByKeyAndUpdate(key: string, data: Partial<SchemaType>): Promise<BaseDocument<SchemaType>> {
 		const item = await this.findByKey(key)
-		if (!item) throw new Error('No item with that id exists')
+		if (!item) throw new Error('No item with that key exists')
 
 		// Prevent accidently changing immutable attributes
 		const newItem = {
@@ -394,7 +428,7 @@ export class Base <SchemaType> {
 	*/
 	async findByKeyAndDelete(key: string): Promise<void> {
 		const item = await this.findByKey(key)
-		if (!item) throw new Error('No item with that id exists')
+		if (!item) throw new Error('No item with that key exists')
 
 		await this._db.delete(item.key)
 	}
@@ -406,7 +440,7 @@ export class Base <SchemaType> {
 	*/
 	async findOneAndDelete(query: Query<SchemaType> = {}): Promise<void> {
 		const item = await this.findOne(query)
-		if (!item) throw new Error('No item with that id exists')
+		if (!item) throw new Error('No item with that key exists')
 
 		await this._db.delete(item.key)
 	}
@@ -422,6 +456,7 @@ class Document <SchemaType> {
 	static _baseName: string
 	static _db: DetaBase
 	static _opts: ParsedOptions
+	_baseSchema?: Schema<SchemaType>
 
 	/**
 	 * Create a new Document instance with the provided data.
@@ -429,7 +464,7 @@ class Document <SchemaType> {
 	 * Will auto generate a key if it is missing.
 	 * @internal
 	*/
-	constructor(data: SchemaType) {
+	constructor(data: SchemaType, _baseSchema: Schema<SchemaType>) {
 		Object.assign(this, data)
 		this.key = this.key || generateKey(Document._opts.ascending)
 
@@ -437,6 +472,13 @@ class Document <SchemaType> {
 		if (Document._opts.timestamp) {
 			this.createdAt = Date.now()
 		}
+
+		Object.defineProperty(this, '_baseSchema', {
+			enumerable: false,
+			configurable: false,
+			writable: false,
+			value: _baseSchema
+		})
 	}
 
 	/**
@@ -453,6 +495,44 @@ class Document <SchemaType> {
 	*/
 	async delete() {
 		await Document._db.delete(this.key as string)
+	}
+
+	/**
+	 * Populate a sub-document
+	*/
+	async populate(path: string) {
+		const pathObj = this._baseSchema?.schema[path]
+		if (!pathObj) throw new Error(`No path with that name found to populate`)
+
+		const baseName = pathObj?.baseName
+		if (!baseName) throw new Error(`Can't populate this path because it doesn't have a baseName defined`)
+
+		// Create new Deta Base instance
+		const deta = Deta()
+		const db = deta.Base(baseName)
+
+		const key = this[path]
+
+		const rawData = await db.get(key)
+		if (rawData === null) throw new Error(`No item with that key exists in the base ${ baseName }`)
+
+		const schemaOfPath = pathObj.baseSchema
+		if (schemaOfPath) {
+			const validated = schemaOfPath.validate(rawData as any)
+
+			// Log all errors and throw first one
+			if (validated.errors && validated.errors.length > 0) {
+				validated.errors.forEach((err) => console.error('Validation error: ' + err))
+				throw new Error(validated.errors[0])
+			}
+
+			this[path] = validated.result
+		} else {
+			this[path] = rawData
+		}
+
+		// Todo: Make resolved Document typed based on referenced Base
+		return this[path]
 	}
 
 	/**

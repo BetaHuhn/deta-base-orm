@@ -1,5 +1,4 @@
-/* eslint-disable no-unused-vars */
-import * as DetaOrm from '../src/index'
+import * as DetaOrm from '../src/index' // import * as DetaOrm from 'deta-base-orm'
 
 const run = async () => {
 
@@ -45,7 +44,7 @@ const run = async () => {
 	console.log(cutest) // [{name: 'Line', cuteness: 8}]
 
 	// 💘 Delete a kitten
-	await sameKitten.delete()
+	await sameKitten?.delete()
 }
 
 run()

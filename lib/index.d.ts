@@ -47,20 +47,26 @@ interface ParsedOptions {
     ascending: boolean;
     timestamp: boolean;
 }
-declare type SchemaType = string | number | boolean | object | SchemaType[];
+declare type BaseValueType = string | number | boolean | object | BaseValueType[];
 interface SchemaOptions {
     type: string;
     required?: boolean;
-    default?: SchemaType;
+    default?: BaseValueType;
+    base?: Base<BaseSchema>;
+    baseName?: string;
+    baseSchema?: Schema<BaseSchema>;
 }
 export interface BaseSchema {
-    [key: string]: string | BaseSchema | SchemaOptions;
+    [key: string]: string | BaseSchema | SchemaOptions | Base<BaseSchema>;
 }
 interface ParsedSchemaOptions {
     type: string;
     required: boolean;
     __end: boolean;
-    default?: SchemaType;
+    default?: BaseValueType;
+    base?: Base<BaseSchema>;
+    baseName?: string;
+    baseSchema?: Schema<BaseSchema>;
 }
 interface ParsedBaseSchema {
     [key: string]: ParsedSchemaOptions;
@@ -171,13 +177,14 @@ declare class Document<SchemaType> {
     static _baseName: string;
     static _db: DetaBase;
     static _opts: ParsedOptions;
+    _baseSchema?: Schema<SchemaType>;
     /**
      * Create a new Document instance with the provided data.
      *
      * Will auto generate a key if it is missing.
      * @internal
     */
-    constructor(data: SchemaType);
+    constructor(data: SchemaType, _baseSchema: Schema<SchemaType>);
     /**
      * Update the document with the provided data
      *
@@ -188,6 +195,10 @@ declare class Document<SchemaType> {
      * Delete the document
     */
     delete(): Promise<void>;
+    /**
+     * Populate a sub-document
+    */
+    populate(path: string): Promise<any>;
     /**
      * Save the Document to the database
      *

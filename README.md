@@ -18,7 +18,7 @@ This project is under heavy development and not yet suitable for production use!
 
 ## 👋 Introduction
 
-Deta Base ORM is a JavaScript/TypeScript library which lets your work with [Deta Base](https://docs.deta.sh/docs/base/about) in a object relational model. It lets you define a schema for your bases and interact with your data in a more functional way. It is heavily inspired by [mongoose](https://mongoosejs.com/docs/index.html) and helps you write high quality, maintainable applications in a more productive way then with the standard [Deta Base SDK](https://docs.deta.sh/docs/base/sdk/) (it uses it under the hood).
+Deta Base ORM is a JavaScript/TypeScript library which lets your work with [Deta Base](https://docs.deta.sh/docs/base/about) in a object relational model. Define a schema for your Base, cross reference items between Bases and interact with your data in a more functional way. It is heavily inspired by [mongoose](https://mongoosejs.com/docs/index.html) and helps you write high quality, maintainable applications in a more productive way then with the standard [Deta Base SDK](https://docs.deta.sh/docs/base/sdk/) (it uses it under the hood).
 
 ## 🚀 Get started
 
@@ -165,6 +165,60 @@ The changes should be a JavaScript object defining the changes.
 await document.delete()
 ```
 
+### Cross referencing
+
+You can cross reference documents from one Base to another:
+
+```js
+// 🏃‍♂️ Declare Base for humans
+const Human = new DetaOrm.Base('Human', {
+    name: 'string'
+})
+
+// 🛌 Declare Base for kittens
+const Kitten = new DetaOrm.Base('Kitten', {
+    name: 'string',
+    owner: Human
+})
+
+// 👶 Create new human
+const human = await Human.save({
+    name: 'Maxi'
+})
+
+// 🐱 Create new kitten
+const cat = await Kitten.save({
+    name: 'Line',
+    owner: human.key // Reference id of human
+})
+
+console.log(cat) // => { name: 'Line', owner: '17be07f6ee7zNXWw' }
+
+// ✨ Replace id of the owner with actual data from another Base
+await cat.populate('owner')
+
+console.log(cat) // => { name: 'Line', owner: { name: 'Maxi' } }
+```
+
+`.populate()` takes a path to a field in your schema and returns a document matching the value of that path from another Base. It only stores the key of the document in the Base, the acutal data is resolved from the other Base. For this to work you need to define the other Base in your schema:
+
+```js
+const Human = new DetaOrm.Base('Human', {
+    name: 'string'
+})
+
+const Kitten = new DetaOrm.Base('Kitten', {
+    name: 'string',
+    owner: Human, // This tells the library that this path is a cross reference to another Base
+
+    // Does the same as above
+    owner: {
+        type: 'base',
+        base: Human
+    }
+})
+```
+
 ## ⚙️ Options
 
 Here are all the available options:
@@ -180,9 +234,8 @@ const db = deta.Base(name)
 const Base = new DetaOrm.Base(name, schema, { db })
 ```
 
-## ✨ Planned features
+## 💡 Planned features
 
-- Reference other basis in your base and [populate](https://mongoosejs.com/docs/populate.html) it
 - Sorting and [filtering](https://docs.deta.sh/docs/base/sdk#queries)
 - Add custom methods/actions to the Base
 
