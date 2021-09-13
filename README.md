@@ -128,7 +128,7 @@ await document.save()
 You can also create and save a document in one go:
 
 ```ts
-const document = Base.save({
+const document = await Base.save({
     name: 'Maxi',
     age: 5,
     hungry: true
@@ -138,7 +138,7 @@ const document = Base.save({
 ### Retrieving documents
 
 ```ts
-const documents = Base.find(query)
+const documents = await Base.find(query)
 ```
 
 The query should be a JavaScript object specifing attributes to filter for defined in the schema.
@@ -146,7 +146,7 @@ The query should be a JavaScript object specifing attributes to filter for defin
 ### Retrieving a single document
 
 ```ts
-const document = Base.findOne(query)
+const document = await Base.findOne(query)
 ```
 
 The query should be a JavaScript object specifing attributes to filter for defined in the schema.
