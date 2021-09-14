@@ -221,11 +221,30 @@ const Kitten = new DetaOrm.Base('Kitten', {
 
 ## ⚙️ Options
 
+You can optionally pass a options object to the the Base contructor:
+
+```ts
+const options = { /* optional */ }
+const Base = new DetaOrm.Base(name, schema, options)
+```
+
 Here are all the available options:
+
+### Key generation
+
+By default this library will generate random keys which are in an ascending order, meaning that new documents will always be at the bottom. You can change this by setting `descending` to true. New documents will then be at the top of your Base.
+
+In ascending mode it will use the Unix timestamp and in descending order `maxDateNowValue (8.64e15) - Unix timestamp` to make sure the key is sequential. The key will be appended with a random id to make sure two documents created at the same time do not have the same key. The final key will consist of the sequential timestamp in hex plus a 5 char random id.
+
+> Because the timestamp is in ms, the key is only sequential until a certain point i.e two keys generated in the same ms may not be in the right order
+
+### Timestamp
+
+This library can optionally add a `createdAt` field to each new document containing the timestamp of when it was created. To enabled this, set `timestamp` to true.
 
 ### Custom Base
 
-If you already have a Deta Base instance you can pass it to Deta Base ORM to reuse:
+If you already have a Deta Base instance you can pass it to Deta Base ORM as the `db` option to reuse it:
 
 ```ts
 const deta = Deta()

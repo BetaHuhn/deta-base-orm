@@ -9,10 +9,16 @@ export interface BaseOptions {
 	/** Existing Deta Base instance */
 	db?: DetaBase,
 
-	/** Generate keys in descending order i.e. newest on top */
+	/**
+	 * Generate keys in descending order i.e. newest on top
+	 * @default false
+	 */
 	descending?: boolean
 
-	/** Automatically create createdAt field containing the timestamp */
+	/**
+	 * Automatically create createdAt field containing the timestamp
+	 * @default false
+	 */
 	timestamp?: boolean
 }
 
