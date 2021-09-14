@@ -42,10 +42,44 @@ export type BaseDocument<Schema> = Document<Schema> & Schema & {
 	createdAt?: number
 }
 
+
+/**
+ * Operators to use in a query
+*/
+export type QueryOperators = {
+	/** Equal to */
+	$eq?: BaseValueType,
+	/** Not equal to */
+	$ne?: BaseValueType,
+	/** Less Than */
+	$lt?: number,
+	/** Greater than */
+	$gt?: number,
+	/** Less than or equal  */
+	$lte?: number,
+	/** Greater than or equal  */
+	$gte?: number,
+	/** Prefix */
+	$pfx?: string,
+	/** Range */
+	$rg?: number[],
+	/** Contains */
+	$con?: string,
+	/** Not contains */
+	$ncon?: string
+}
+
+/**
+ * Add operators to each property of a Schema
+*/
+type SchemaWithOperators<SchemaType> = {
+	[Property in keyof SchemaType]: SchemaType[Property] | QueryOperators;
+}
+
 /**
  * Query to use for finding documents
 */
-export type Query<Schema> = Partial<Schema | {
+export type Query<SchemaType> = Partial<SchemaType | {
 	/**
 	 * The unique key of the document
 	 *
@@ -60,7 +94,7 @@ export type Query<Schema> = Partial<Schema | {
 	 * Note: Only set when timestamp option is true
 	 * */
 	createdAt?: number
-}>
+} | SchemaWithOperators<SchemaType>>
 
 interface ParsedOptions {
 	ascending: boolean
@@ -119,7 +153,7 @@ export class Schema<SchemaType> {
 				parsedSchema[key] = {
 					__end: true,
 					type: value,
-					required: true,
+					required: false,
 					default: undefined
 				}
 
@@ -130,7 +164,7 @@ export class Schema<SchemaType> {
 					type: 'base',
 					baseName: value._baseName,
 					baseSchema: value._baseSchema,
-					required: true,
+					required: false,
 					default: undefined
 				}
 
@@ -168,6 +202,8 @@ export class Schema<SchemaType> {
 	}
 
 	validate(data: SchemaType, partialSchema?: ParsedBaseSchema): { errors: string[], result: SchemaType } {
+		if (!data) throw new Error(`Can't validate missing data`)
+
 		let errors: string[] = []
 		let result: Partial<SchemaType> = {}
 
@@ -305,22 +341,56 @@ export class Base <SchemaType> {
 		return doc
 	}
 
+	_parseQuery(queryObj: Query<SchemaType>): any {
+		const queries = Object.entries(queryObj)
+		const result: any = {}
+
+		queries.forEach(([ key, query ]) => {
+			if (typeof query !== 'object' || query === null) {
+				return result[key] = query
+			}
+
+			const properties = Object.entries(query)
+			properties.forEach(([ operator, value ]) => {
+				if (!operator.startsWith('$')) return
+
+				if (operator === '$con') {
+					result[`${ key }?contains`] = value
+				} else if (operator === '$ncon') {
+					result[`${ key }?!contains`] = value
+				} else if (operator === '$rg') {
+					result[`${ key }?r`] = value
+				} else if (operator === '$eq') {
+					result[key] = value
+				} else {
+					result[`${ key }?${ operator.slice(1) }`] = value
+				}
+			})
+		})
+
+		return result
+	}
+
 	/**
 	 * Wrapper around the Deta Base SDK fetch method
 	 *
 	 * Automatically gets all items until the limit or since the last item
 	 * @internal
 	*/
-	async _fetch(query: any = {}, limit?: number, last?: string): Promise<any[]> {
-		let res = await this._db.fetch(query, limit ? { limit, last } : undefined)
+	async _fetch(query: any = {}, limit?: number, last?: string): Promise<{ items: any[], last?: string }> {
+
+		const queries = Array.isArray(query) ? query : [ query ]
+		const parsedQuery = queries.map(this._parseQuery)
+
+		let res = await this._db.fetch(parsedQuery, limit ? { limit, last } : undefined)
 		let items: Array<any> = res.items
 
 		// We already have enough data
-		if (limit && items.length === limit) return items
+		if (limit && items.length === limit) return { items, last: res.last }
 
 		// More data available
 		while (res.last) {
-			res = await this._db.fetch(query, {
+			res = await this._db.fetch(parsedQuery, {
 				// If we have a limit set we only need to get the remaining items
 				...(limit) && { limit: limit - items.length },
 
@@ -332,7 +402,7 @@ export class Base <SchemaType> {
 		}
 
 		// We have everything
-		return items
+		return { items }
 	}
 
 	/**
@@ -340,19 +410,19 @@ export class Base <SchemaType> {
 	 *
 	 * Use limit and last to paginate the result.
 	 *
-	 * @param query A query object
+	 * @param query A query object or array of query objects
 	 * @returns Array of Documents
 	*/
-	async find(query: Query<SchemaType> = {}, limit?: number, last?: string): Promise<BaseDocument<SchemaType>[]> {
-		const items = await this._fetch(query, limit, last)
+	async find(query: Query<SchemaType> | Query<SchemaType>[] = {}, limit?: number, last?: string): Promise<BaseDocument<SchemaType>[]> {
+		const res = await this._fetch(query, limit, last)
 
-		if (!items) return []
+		if (!res.items) return []
 
-		const res = items.map((item: any) => {
+		const result = res.items.map((item: any) => {
 			return this.create(item)
 		})
 
-		return res
+		return result
 	}
 
 	/**
@@ -361,10 +431,10 @@ export class Base <SchemaType> {
 	 * @param query A query object
 	 * @returns Document
 	*/
-	async findOne(query: Query<SchemaType> = {}): Promise<BaseDocument<SchemaType> | undefined> {
-		const res = await this._db.fetch(query as any, { limit: 1 })
+	async findOne(query: Query<SchemaType> | Query<SchemaType>[] = {}): Promise<BaseDocument<SchemaType> | undefined> {
+		const res = await this._fetch(query as any, 1)
 
-		if (res.count < 1) return undefined
+		if (res.items.length < 1) return undefined
 
 		return this.create(res.items[0] as any)
 	}
@@ -390,7 +460,7 @@ export class Base <SchemaType> {
 	 * @param data The data to update
 	 * @returns Document
 	*/
-	async findOneAndUpdate(query: Query<SchemaType> = {}, data: Partial<SchemaType>): Promise<BaseDocument<SchemaType>> {
+	async findOneAndUpdate(query: Query<SchemaType> | Query<SchemaType>[] = {}, data: Partial<SchemaType>): Promise<BaseDocument<SchemaType>> {
 		const item = await this.findOne(query)
 		if (item === undefined) throw new Error('No item with that key exists')
 
@@ -444,7 +514,7 @@ export class Base <SchemaType> {
 	 *
 	 * @param query A query object
 	*/
-	async findOneAndDelete(query: Query<SchemaType> = {}): Promise<void> {
+	async findOneAndDelete(query: Query<SchemaType> | Query<SchemaType>[] = {}): Promise<void> {
 		const item = await this.findOne(query)
 		if (!item) throw new Error('No item with that key exists')
 
@@ -475,7 +545,7 @@ class Document <SchemaType> {
 		this.key = this.key || generateKey(Document._opts.ascending)
 
 		// Add timestamp to document
-		if (Document._opts.timestamp) {
+		if (Document._opts.timestamp && this.createdAt === undefined) {
 			this.createdAt = Date.now()
 		}
 

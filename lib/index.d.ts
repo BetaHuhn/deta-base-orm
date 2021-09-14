@@ -32,9 +32,40 @@ export declare type BaseDocument<Schema> = Document<Schema> & Schema & {
     createdAt?: number;
 };
 /**
+ * Operators to use in a query
+*/
+export declare type QueryOperators = {
+    /** Equal to */
+    $eq?: BaseValueType;
+    /** Not equal to */
+    $ne?: BaseValueType;
+    /** Less Than */
+    $lt?: number;
+    /** Greater than */
+    $gt?: number;
+    /** Less than or equal  */
+    $lte?: number;
+    /** Greater than or equal  */
+    $gte?: number;
+    /** Prefix */
+    $pfx?: string;
+    /** Range */
+    $rg?: number[];
+    /** Contains */
+    $con?: string;
+    /** Not contains */
+    $ncon?: string;
+};
+/**
+ * Add operators to each property of a Schema
+*/
+declare type SchemaWithOperators<SchemaType> = {
+    [Property in keyof SchemaType]: SchemaType[Property] | QueryOperators;
+};
+/**
  * Query to use for finding documents
 */
-export declare type Query<Schema> = Partial<Schema | {
+export declare type Query<SchemaType> = Partial<SchemaType | {
     /**
      * The unique key of the document
      *
@@ -48,7 +79,7 @@ export declare type Query<Schema> = Partial<Schema | {
      * Note: Only set when timestamp option is true
      * */
     createdAt?: number;
-}>;
+} | SchemaWithOperators<SchemaType>>;
 interface ParsedOptions {
     ascending: boolean;
     timestamp: boolean;
@@ -115,29 +146,33 @@ export declare class Base<SchemaType> {
      * @returns {BaseDocument} Document
      */
     save(data: SchemaType): Promise<BaseDocument<SchemaType>>;
+    _parseQuery(queryObj: Query<SchemaType>): any;
     /**
      * Wrapper around the Deta Base SDK fetch method
      *
      * Automatically gets all items until the limit or since the last item
      * @internal
     */
-    _fetch(query?: any, limit?: number, last?: string): Promise<any[]>;
+    _fetch(query?: any, limit?: number, last?: string): Promise<{
+        items: any[];
+        last?: string;
+    }>;
     /**
      * Find all documents matching the query.
      *
      * Use limit and last to paginate the result.
      *
-     * @param query A query object
+     * @param query A query object or array of query objects
      * @returns Array of Documents
     */
-    find(query?: Query<SchemaType>, limit?: number, last?: string): Promise<BaseDocument<SchemaType>[]>;
+    find(query?: Query<SchemaType> | Query<SchemaType>[], limit?: number, last?: string): Promise<BaseDocument<SchemaType>[]>;
     /**
      * Find a single document matching the query.
      *
      * @param query A query object
      * @returns Document
     */
-    findOne(query?: Query<SchemaType>): Promise<BaseDocument<SchemaType> | undefined>;
+    findOne(query?: Query<SchemaType> | Query<SchemaType>[]): Promise<BaseDocument<SchemaType> | undefined>;
     /**
      * Find a single document by its key
      *
@@ -152,7 +187,7 @@ export declare class Base<SchemaType> {
      * @param data The data to update
      * @returns Document
     */
-    findOneAndUpdate(query: Query<SchemaType> | undefined, data: Partial<SchemaType>): Promise<BaseDocument<SchemaType>>;
+    findOneAndUpdate(query: Query<SchemaType> | Query<SchemaType>[] | undefined, data: Partial<SchemaType>): Promise<BaseDocument<SchemaType>>;
     /**
      * Find a single document by its key and update it with the provided data.
      *
@@ -172,7 +207,7 @@ export declare class Base<SchemaType> {
      *
      * @param query A query object
     */
-    findOneAndDelete(query?: Query<SchemaType>): Promise<void>;
+    findOneAndDelete(query?: Query<SchemaType> | Query<SchemaType>[]): Promise<void>;
 }
 /**
  * Represents a Document with all of its data and methods

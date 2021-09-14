@@ -92,10 +92,15 @@ See below for a more detailed guide.
 
 ### Defining a schema
 
+Before you can properly use the other methods you need to define a schema for your Base. It specifies what values to expect and in what format. You can set a property to required (`false` by default) or specify a default value:
+
 ```ts
 const schema = new DetaOrm.Schema({
     name: 'string',
-    age: 'number',
+    age: {
+        type: 'number',
+        required: true
+    },
     hungry: {
         type: 'boolean',
         default: false
@@ -105,11 +110,15 @@ const schema = new DetaOrm.Schema({
 
 ### Creating a Base
 
+Creating a new Base is similar to how you would do it with the regular [Deta Base SDK](https://docs.deta.sh/docs/base/sdk) except that it also accepts a schema. The schema can either be a instance of the Schema class or an object defining a schema (like above):
+
 ```ts
-const Base = new DetaOrm.Base('name', schema)
+const Base = new DetaOrm.Base('name', schema, options)
 ```
 
 ### Creating a new document
+
+Creating a new document/item in your Base is very easy. Just call the `.create()` method of your Base instance and pass it some new data. Make sure the data matches your schema, else it will throw and error telling you what's wrong.
 
 ```ts
 const document = Base.create({
@@ -119,13 +128,17 @@ const document = Base.create({
 })
 ```
 
+> Creating a document doesn't save it to Deta Base automatically. It only exists locally until you call `.save()`
+
 ### Saving a document
+
+To save a document to your Deta Base, call `.save()`:
 
 ```ts
 await document.save()
 ```
 
-You can also create and save a document in one go:
+You can also create and save a document in one go by calling `.save()` on your Base instance instead of `.create()`:
 
 ```ts
 const document = await Base.save({
@@ -137,11 +150,15 @@ const document = await Base.save({
 
 ### Retrieving documents
 
+There are multiple ways to retrieve documents from your Base:
+
+### Multiple documents
+
 ```ts
 const documents = await Base.find(query)
 ```
 
-The query should be a JavaScript object specifing attributes to filter for defined in the schema.
+The query should be a JavaScript object specifing attributes to filter for defined in the schema. See [Filtering](#Filtering) below.
 
 ### Retrieving a single document
 
@@ -149,7 +166,7 @@ The query should be a JavaScript object specifing attributes to filter for defin
 const document = await Base.findOne(query)
 ```
 
-The query should be a JavaScript object specifing attributes to filter for defined in the schema.
+The query should be a JavaScript object specifing attributes to filter for defined in the schema. See [Filtering](#Filtering) below.
 
 ### Updating a document
 
@@ -219,6 +236,75 @@ const Kitten = new DetaOrm.Base('Kitten', {
 })
 ```
 
+### Filtering
+
+When getting a document from a base with `.find()` and `.findOne()` you can specify a query object or list of queries to filter the documents with. In the object you can select paths from your schema and define filters and queries to match it against:
+
+```js
+const Kitten = new DetaOrm.Base('Kitten', {
+    name: 'string',
+    cuteness: 'number'
+})
+
+const garfield = await Kitten.findOne({
+    name: 'Garfield' // Name equals value
+})
+
+const cutest = await Kitten.find({
+    name: {
+        $con: 'e' // All kittens with the letter e in their name
+    },
+    cuteness: {
+        $gt: 8 // All kittens with a cuteness greater than 8
+    }
+})
+```
+
+This library supports all of Deta Bases [queries](https://docs.deta.sh/docs/base/sdk#queries):
+
+| Name                  | Property | Description                                      |
+|-----------------------|----------|--------------------------------------------------|
+| Equal                 | $eq      | Equal to value                                   |
+| Not Equal             | $ne      | Not equal to value                               |
+| Less Than             | $lt      | Less than number                                 |
+| Greater Than          | $gt      | Greater than number                              |
+| Less Than Or Equal    | $lte     | Less than or equal to number                     |
+| Greater Than Or Equal | $gte     | Greater than or equal to number                  |
+| Prefix                | $pfx     | Prefix of value                                  |
+| Range                 | $rg      | Range of numbers i.e. [22,30]                    |
+| Contains              | $con     | String contains substring or array contains item |
+| Not Contains          | $ncon    | Opposite of contains                             |
+
+They can be combined together in one query or used in different queries. All queries in an object are interpreted as `AND`:
+
+```js
+await Base.find({
+    name: {
+        $con: 'repo',
+        $pfx: 'gh'
+    }
+})
+```
+
+> Here: name starts with the prefix `gh` AND contains the substring `repo`
+
+Queries in separate objects are treated as `OR`:
+
+```js
+await Base.find([
+    {
+        name: 'Hello'
+    },
+    {
+        cuteness: {
+            $gt: 8
+        }
+    }
+])
+```
+
+> Here: The name must be `Hello` OR the cuteness greater than `8`
+
 ## ⚙️ Options
 
 You can optionally pass a options object to the the Base contructor:
@@ -255,7 +341,7 @@ const Base = new DetaOrm.Base(name, schema, { db })
 
 ## 💡 Planned features
 
-- Sorting and [filtering](https://docs.deta.sh/docs/base/sdk#queries)
+- Offline mode
 - Add custom methods/actions to the Base
 
 ## 💻 Development
