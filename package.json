@@ -41,7 +41,7 @@
     "@typescript-eslint/eslint-plugin": "^4.24.0",
     "@typescript-eslint/parser": "^4.24.0",
     "eslint": "^7.26.0",
-    "ts-node": "^9.1.1",
+    "ts-node": "^10.4.0",
     "tsc-watch": "^4.2.9",
     "typescript": "^4.2.4"
   }
