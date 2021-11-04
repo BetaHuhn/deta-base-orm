@@ -3,6 +3,7 @@ import { Deta } from 'deta'
 import DetaBase from 'deta/dist/types/base'
 
 import { generateKey } from './random'
+import { OfflineDB } from './Offline'
 
 import { ParsedOptions, BaseSchema, BaseOptions, BaseDocument, Query, FullSchema } from './types'
 import { Schema } from './Schema'
@@ -14,7 +15,7 @@ import { Document } from './Document'
 export class Base <SchemaType> {
 	_baseName: string
 	_baseSchema: Schema<SchemaType>
-	_db: DetaBase
+	_db: DetaBase | OfflineDB
 	_opts: ParsedOptions
 
 	/**
@@ -37,6 +38,11 @@ export class Base <SchemaType> {
 		const offline = opts?.offline || false
 		const storagePath = opts?.storagePath || '.deta-base-orm'
 		this._opts = { ascending, timestamp, offline, storagePath }
+
+		if (this._opts.offline) {
+			this._db = new OfflineDB(this._opts.storagePath, this._baseName)
+			return
+		}
 
 		// Reuse Deta Base
 		const db = opts?.db

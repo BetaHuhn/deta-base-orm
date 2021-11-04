@@ -4,6 +4,7 @@ import { Deta } from 'deta'
 import DetaBase from 'deta/dist/types/base'
 
 import { generateKey } from './random'
+import { OfflineDB } from './Offline'
 
 import { ParsedOptions } from './types'
 import { Schema } from './Schema'
@@ -16,7 +17,7 @@ export class Document <SchemaType> {
 	// eslint-disable-next-line no-undef
 	[k: string]: any
 	static _baseName: string
-	static _db: DetaBase
+	static _db: DetaBase | OfflineDB
 	static _opts: ParsedOptions
 	_baseSchema?: Schema<SchemaType>
 
