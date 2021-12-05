@@ -377,9 +377,13 @@ const db = deta.Base(name)
 const Base = new DetaOrm.Base(name, schema, { db })
 ```
 
-## 💡 Planned features
+## 💡 Planned features/To Do
 
 - Add custom methods/actions to the Base
+- Make populate work offline
+- Add populate as chained command to `find()`
+- Populate multiple paths at once
+- Fix ESM issues
 
 ## 💻 Development
 
