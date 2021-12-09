@@ -1,4 +1,5 @@
-import * as DetaOrm from '../lib/index'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const DetaOrm = require('../lib/index') // const DetaOrm = require('deta-base-orm')
 
 const run = async () => {
 	// Create the model

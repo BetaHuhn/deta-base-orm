@@ -36,6 +36,12 @@ Then import it into your project:
 import * as DetaOrm from 'deta-base-orm'
 ```
 
+Or:
+
+```ts
+const DetaOrm = require('deta-base-orm')
+```
+
 ### Example
 
 Here's a quick example to help you get started!

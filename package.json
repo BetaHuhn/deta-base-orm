@@ -4,17 +4,17 @@
   "description": "Basic ORM for Deta Base",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
-  "type": "module",
   "files": [
     "lib"
   ],
   "scripts": {
-    "lint": "eslint ./src/ --ext .ts",
-    "watch": "tsc-watch --onSuccess \"node ./lib/index.js\"",
+    "clean": "rimraf lib",
+    "prebuild": "npm run clean",
+    "start": "ts-node",
+    "dev": "ts-node dev/index.ts",
+    "watch": "tsc-watch --onSuccess \"node ./example/index.js\"",
     "build": "tsc -p tsconfig.json",
-    "example": "ts-node example/index.ts",
-    "dev": "node --experimental-specifier-resolution=node --loader ts-node/esm dev/index.ts",
-    "start": "node lib/index.js"
+    "lint": "eslint ./src/ --ext .ts"
   },
   "repository": {
     "type": "git",
@@ -35,16 +35,18 @@
     "deta": "^1.0.0",
     "dotenv": "^10.0.0",
     "lodash": "^4.17.21",
-    "lowdb": "^3.0.0",
+    "lowdb": "^1.0.0",
     "nanoid": "^3.1.23"
   },
   "devDependencies": {
     "@betahuhn/config": "^1.1.0",
     "@types/lodash": "^4.14.176",
+    "@types/lowdb": "^1.0.11",
     "@types/node": "^16.4.13",
     "@typescript-eslint/eslint-plugin": "^4.24.0",
     "@typescript-eslint/parser": "^4.24.0",
     "eslint": "^7.26.0",
+    "rimraf": "^3.0.2",
     "ts-node": "^10.4.0",
     "tsc-watch": "^4.2.9",
     "typescript": "^4.2.4"

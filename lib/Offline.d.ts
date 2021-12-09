@@ -1,8 +1,6 @@
-import { Low, Adapter } from 'lowdb';
-import lodash from 'lodash';
-declare class LowDash<T> extends Low<T> {
-    chain?: lodash.CollectionChain<any> & lodash.FunctionChain<any> & lodash.ObjectChain<any> & lodash.PrimitiveChain<any> & lodash.StringChain;
-    constructor(adapter: Adapter<T>);
+import low from 'lowdb';
+interface DbSchema {
+    [k: string]: [any];
 }
 /**
  * Mocks the Deta Base SDK with a local database
@@ -12,8 +10,11 @@ declare class LowDash<T> extends Low<T> {
  * Note: Not all methods are implemented, only the ones need by deta-base-orm
  */
 export declare class OfflineDB {
-    db: LowDash<any>;
+    _db?: low.LowdbAsync<DbSchema>;
+    _adapter: any;
     _didLoad: boolean;
+    _filePath: string;
+    _baseName: string;
     constructor(storagePath?: string, fileName?: string);
     /**
      * Create a new instance of the OfflineDB with the file loaded automatically
@@ -40,7 +41,7 @@ export declare class OfflineDB {
      * Lists all items in the database
      * @returns All items in the database
      */
-    list(): Promise<any[] | undefined>;
+    list(): Promise<DbSchema | undefined>;
     /**
      * Implements the get API
      * @param key The key of the item to be retrieved

@@ -3,14 +3,12 @@
 import { join } from 'path'
 import fs from 'fs'
 
-import { Low, JSONFile, Adapter } from 'lowdb'
-import lodash from 'lodash'
+import low from 'lowdb'
+import FileAsync from 'lowdb/adapters/FileAsync'
+import { unionBy } from 'lodash'
 
-class LowDash <T> extends Low <T> {
-	chain?: lodash.CollectionChain<any> & lodash.FunctionChain<any> & lodash.ObjectChain<any> & lodash.PrimitiveChain<any> & lodash.StringChain
-	constructor(adapter: Adapter<T>) {
-		super(adapter)
-	}
+interface DbSchema {
+	[k: string]: [any]
 }
 
 /**
@@ -22,8 +20,11 @@ class LowDash <T> extends Low <T> {
  */
 export class OfflineDB {
 
-	db: LowDash<any>
+	_db?: low.LowdbAsync<DbSchema>
+	_adapter: any
 	_didLoad: boolean
+	_filePath: string
+	_baseName: string
 
 	constructor(storagePath = '.deta-base-orm', fileName = 'base') {
 
@@ -38,9 +39,9 @@ export class OfflineDB {
 
 		const file = join(storagePath, `${ fileName }.json`)
 
-		const adapter = new JSONFile<any>(file)
-		this.db = new LowDash<any>(adapter)
-
+		this._baseName = fileName
+		this._filePath = file
+		this._adapter = new FileAsync<DbSchema>(file)
 		this._didLoad = false
 	}
 
@@ -61,13 +62,13 @@ export class OfflineDB {
 	 * Initializes the database by loading the JSON file
 	 */
 	async init() {
-		await this.db.read()
+		this._db = await low(this._adapter)
 
-		if (this.db.data === null) {
-			this.db.data = []
+		await this._db.read()
+
+		if (this._db.get(this._baseName).value() === undefined) {
+			await this._db.set(this._baseName, []).write()
 		}
-
-		this.db.chain = lodash.chain(this.db.data)
 
 		this._didLoad = true
 	}
@@ -89,8 +90,7 @@ export class OfflineDB {
 	async put(data: any) {
 		await this.check()
 
-		this.db.data.push(data)
-		await this.db.write()
+		await this._db?.get(this._baseName).push(data).write()
 
 		return data
 	}
@@ -102,7 +102,7 @@ export class OfflineDB {
 	async list() {
 		await this.check()
 
-		return this.db.chain?.value()
+		return this._db?.value()
 	}
 
 	/**
@@ -113,7 +113,7 @@ export class OfflineDB {
 	async get(key: string) {
 		await this.check()
 
-		return this.db.chain?.find({ key }).value() || null
+		return this._db?.get(this._baseName).find({ key }).value() || null
 	}
 
 	/**
@@ -128,9 +128,9 @@ export class OfflineDB {
 
 		let results: any[] = []
 		query.forEach((query: any) => {
-			const items = this.db.chain?.filter(query).value()
+			const items = this._db?.get(this._baseName).filter(query).value()
 
-			results = lodash.unionBy(results, items, 'key')
+			results = unionBy(results, items, 'key')
 		})
 
 		if (!results) {
@@ -149,8 +149,7 @@ export class OfflineDB {
 	async delete(key: string) {
 		await this.check()
 
-		this.db.chain?.remove({ key }).value()
-		await this.db.write()
+		await this._db?.get(this._baseName).remove({ key }).write()
 
 		return null
 	}
@@ -164,8 +163,7 @@ export class OfflineDB {
 	async update(updates: any, key: string) {
 		await this.check()
 
-		this.db.chain?.update(key, updates).value()
-		await this.db.write()
+		await this._db?.get(this._baseName).update(key, updates).write()
 
 		return null
 	}
