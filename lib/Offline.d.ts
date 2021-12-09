@@ -1,3 +1,4 @@
+/// <reference types="@types/lowdb" />
 import low from 'lowdb';
 interface DbSchema {
     [k: string]: [any];
