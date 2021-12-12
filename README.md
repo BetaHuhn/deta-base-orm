@@ -96,8 +96,6 @@ See below for a more detailed guide.
 
 ## 📚 Usage
 
-*Deta Base ORM is a pure ESM package. If you're having trouble importing it in your project, please [read this](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c).*
-
 ### Defining a schema
 
 Before you can properly use the other methods you need to define a schema for your Base. It specifies what values to expect and in what format. You can set a property to required (`false` by default) or specify a default value:
