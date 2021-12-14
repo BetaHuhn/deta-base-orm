@@ -5,7 +5,7 @@ import fs from 'fs'
 
 import low from 'lowdb'
 import FileAsync from 'lowdb/adapters/FileAsync'
-import { unionBy } from 'lodash'
+import { ObjectChain, unionBy } from 'lodash'
 
 interface DbSchema {
 	[k: string]: [any]
@@ -163,7 +163,9 @@ export class OfflineDB {
 	async update(updates: any, key: string) {
 		await this.check()
 
-		await this._db?.get(this._baseName).update(key, updates).write()
+		const item = this._db?.get(this._baseName).find({ key })
+
+		await (item as ObjectChain<any>).assign(updates).write()
 
 		return null
 	}

@@ -30,10 +30,7 @@ export interface BaseOptions {
      */
     storagePath?: string;
 }
-/**
- * The data of a document
-*/
-export declare type BaseDocument<Schema> = Document<Schema> & Schema & {
+export declare type DocumentData<Schema> = Schema & {
     /**
      * The unique key of the document
      *
@@ -48,6 +45,10 @@ export declare type BaseDocument<Schema> = Document<Schema> & Schema & {
      * */
     createdAt?: number;
 };
+/**
+ * The data of a document
+*/
+export declare type BaseDocument<Schema> = Document<Schema> & DocumentData<Schema>;
 /**
  * Operators to use in a query
 */

@@ -1,6 +1,6 @@
 import DetaBase from 'deta/dist/types/base';
 import { OfflineDB } from './Offline';
-import { ParsedOptions } from './types';
+import { ParsedOptions, DocumentData } from './types';
 import { Schema } from './Schema';
 /**
  * Represents a Document with all of its data and methods
@@ -11,7 +11,8 @@ export declare class Document<SchemaType> {
     static _baseName: string;
     static _db: DetaBase | OfflineDB;
     static _opts: ParsedOptions;
-    _baseSchema?: Schema<SchemaType>;
+    _baseSchema: Schema<SchemaType>;
+    _data: DocumentData<SchemaType>;
     /**
      * Create a new Document instance with the provided data.
      *
@@ -24,13 +25,15 @@ export declare class Document<SchemaType> {
      *
      * @param data The data to update
     */
-    update(data: any): any;
+    update(data: any): Promise<any>;
     /**
      * Delete the document
     */
     delete(): Promise<void>;
     /**
      * Populate a sub-document
+     *
+     * Note: Very hacky and unstable at the moment
     */
     populate(path: string): Promise<any>;
     /**
@@ -39,4 +42,10 @@ export declare class Document<SchemaType> {
      * @returns Document
     */
     save(): Promise<this>;
+    /**
+     * Returns only the data of the document
+     *
+     * @returns Data of the document
+    */
+    value(): DocumentData<SchemaType>;
 }

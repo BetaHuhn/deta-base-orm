@@ -36,10 +36,7 @@ export interface BaseOptions {
 	storagePath?: string
 }
 
-/**
- * The data of a document
-*/
-export type BaseDocument<Schema> = Document<Schema> & Schema & {
+export type DocumentData<Schema> = Schema & {
 	/**
 	 * The unique key of the document
 	 *
@@ -55,6 +52,11 @@ export type BaseDocument<Schema> = Document<Schema> & Schema & {
 	 * */
 	createdAt?: number
 }
+
+/**
+ * The data of a document
+*/
+export type BaseDocument<Schema> = Document<Schema> & DocumentData<Schema>
 
 
 /**
