@@ -62,11 +62,6 @@ export class Base <SchemaType> {
 	 * @returns {BaseDocument} Document
 	 */
 	create(rawData: FullSchema<SchemaType>):BaseDocument<SchemaType> {
-		// Set configs
-		Document._baseName = this._baseName
-		Document._db = this._db
-		Document._opts = this._opts
-
 		// Auto generate a key if is missing
 		if (!rawData.key) {
 			rawData.key = generateKey(this._opts.ascending)
@@ -88,7 +83,7 @@ export class Base <SchemaType> {
 		const data = validated.result
 
 		// Create new document with data
-		return new Document<SchemaType>(data, this._baseSchema) as BaseDocument<SchemaType>
+		return new Document<SchemaType>(data, this._baseSchema, this._baseName, this._db, this._opts) as BaseDocument<SchemaType>
 	}
 
 	/**

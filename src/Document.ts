@@ -17,9 +17,10 @@ import { Schema } from './Schema'
 export class Document <SchemaType> {
 	// eslint-disable-next-line no-undef
 	[k: string]: any
-	static _baseName: string
-	static _db: DetaBase | OfflineDB
-	static _opts: ParsedOptions
+
+	_baseName: string
+	_db: DetaBase | OfflineDB
+	_opts: ParsedOptions
 
 	// Important, definite assertion needed because of Object.defineProperty
 	_baseSchema!: Schema<SchemaType>
@@ -31,16 +32,20 @@ export class Document <SchemaType> {
 	 * Will auto generate a key if it is missing.
 	 * @internal
 	*/
-	constructor(data: SchemaType, _baseSchema: Schema<SchemaType>) {
+	constructor(data: SchemaType, _baseSchema: Schema<SchemaType>, _baseName: string, _db: DetaBase | OfflineDB, _opts: ParsedOptions) {
+		this._baseName = _baseName
+		this._db = _db
+		this._opts = _opts
+
 		// Store data
 		const documentData = {
 			...data,
 
 			// Generate new key if it doesn't exist
-			key: (data as any).key || generateKey(Document._opts.ascending),
+			key: (data as any).key || generateKey(_opts.ascending),
 
 			// Add timestamp to document
-			...(Document._opts.timestamp || (data as any).createdAt && { createdAt: (data as any).createdAt || Date.now() })
+			...(_opts.timestamp || (data as any).createdAt && { createdAt: (data as any).createdAt || Date.now() })
 		}
 
 		// Use defineProperty to hide the property from the Class using enumerable: false
@@ -73,8 +78,10 @@ export class Document <SchemaType> {
 		// Prevent key from being overwritten
 		delete data.key
 
-		await Document._db.update(data, this.key as string)
-		const newData = await Document._db.get(this.key as string)
+		console.log(this.key)
+
+		await this._db.update(data, this.key as string)
+		const newData = await this._db.get(this.key as string)
 
 		this._data = newData
 		Object.assign(this, newData)
@@ -86,7 +93,7 @@ export class Document <SchemaType> {
 	 * Delete the document
 	*/
 	async delete() {
-		await Document._db.delete(this.key as string)
+		await this._db.delete(this.key as string)
 	}
 
 	/**
@@ -140,7 +147,7 @@ export class Document <SchemaType> {
 		const toBeCreated: any = this._data
 
 		// Use put and not insert as we can assume our random key doesn't exist
-		const newItem = await Document._db.put(toBeCreated)
+		const newItem = await this._db.put(toBeCreated)
 
 		if (!newItem) throw new Error('Could not create item')
 

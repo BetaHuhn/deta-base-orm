@@ -8,9 +8,9 @@ import { Schema } from './Schema';
 */
 export declare class Document<SchemaType> {
     [k: string]: any;
-    static _baseName: string;
-    static _db: DetaBase | OfflineDB;
-    static _opts: ParsedOptions;
+    _baseName: string;
+    _db: DetaBase | OfflineDB;
+    _opts: ParsedOptions;
     _baseSchema: Schema<SchemaType>;
     _data: DocumentData<SchemaType>;
     /**
@@ -19,7 +19,7 @@ export declare class Document<SchemaType> {
      * Will auto generate a key if it is missing.
      * @internal
     */
-    constructor(data: SchemaType, _baseSchema: Schema<SchemaType>);
+    constructor(data: SchemaType, _baseSchema: Schema<SchemaType>, _baseName: string, _db: DetaBase | OfflineDB, _opts: ParsedOptions);
     /**
      * Update the document with the provided data
      *
