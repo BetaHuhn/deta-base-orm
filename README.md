@@ -323,9 +323,39 @@ const items = await Base.find({ age: 24 }, 5) // Limit number of items to 5
 const nextFive = await Base.find({ age: 24 }, 5, last: items[4].key) // Use the key of the last item
 ```
 
+### Runtime variables
+
+During the execution of your Deta Micro there are a few different environment variables available which give your information about the micro itself and the environment it is running in. For ease of use, `deta-base-orm` provides them and a few other useful environment variables to you via the `Runtime` class:
+
+```js
+import { Runtime } from 'deta-base-orm'
+
+console.log(Runtime.isMicro)
+console.log(Runtime.region)
+console.log(Runtime.memory)
+console.log(Runtime.domain)
+```
+
+Here is an overview of the available variables:
+
+| Key        | Description                                | Type    | Micro Only |
+|------------|--------------------------------------------|---------|------------|
+| isMicro    | Is the program running in a Deta micro     | boolean | No         |
+| isDev      | Is the program running in development mode | boolean | No         |
+| isOffline  | Is the offline mode enabled                | boolean | No         |
+| isSpace    | Is the micro running inside Space          | boolean | No         |
+| projectKey | Deta project key                           | string  | No         |
+| subdomain  | Subdomain of the micro                     | string  | Yes        |
+| domain     | Full domain of the micro                   | string  | No         |
+| region     | AWS region the micro is running in         | string  | Yes        |
+| memory     | Amount of memory available to the micro    | number  | Yes        |
+| logLevel   | Deta micro log level                       | boolean | No         |
+
 ### Offline Mode
 
 You can optionally enable the offline mode which uses locally stored JSON files instead of the live remote Deta Base service. This is very helpful during development as it allows you to run your queries against a test database and then use the live one in production. And of course, it works offline so you can develop your application with all of the benefits of Base without internet access.
+
+You can enable the offline mode via the environment variable `DETA_OFFLINE` or using the Base option `offline`:
 
 ```ts
 const OfflineBase = new DetaOrm.Base('name', schema, {
