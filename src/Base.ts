@@ -8,7 +8,7 @@ import { OfflineDB } from './Offline'
 import { ParsedOptions, BaseSchema, BaseOptions, BaseDocument, Query, FullSchema } from './types'
 import { Schema } from './Schema'
 import { Document } from './Document'
-import Variables from './variables'
+import Runtime from './Runtime'
 
 /**
  * Create and interact with a Deta Base
@@ -36,7 +36,7 @@ export class Base <SchemaType> {
 		// Parse options
 		const ascending = opts?.descending !== true
 		const timestamp = opts?.timestamp || false
-		const offline = opts?.offline || Variables.isOffline || false
+		const offline = opts?.offline || Runtime.isOffline || false
 		const storagePath = opts?.storagePath || '.deta-base-orm'
 		this._opts = { ascending, timestamp, offline, storagePath }
 

@@ -4,7 +4,7 @@ import dotenv from 'dotenv'
 import { BaseOptions, Query } from './types'
 import { Base } from './Base'
 import { Schema } from './Schema'
-import Variables from './variables'
+import Runtime from './Runtime'
 
 dotenv.config()
 
@@ -13,5 +13,5 @@ export {
 	Schema,
 	BaseOptions,
 	Query,
-	Variables
+	Runtime
 }
