@@ -1,7 +1,8 @@
+/* eslint-disable no-unused-vars */
 import DetaBase from 'deta/dist/types/base'
-import { Base } from './Base'
-import { Schema } from './Schema'
-import { Document } from './Document'
+import { Base as BaseClass } from './Base'
+import { Schema as SchemaClass } from './Schema'
+import { Document as DocumentClass } from './Document'
 
 export interface BaseOptions {
 	/** Existing Deta Base instance */
@@ -36,7 +37,7 @@ export interface BaseOptions {
 	storagePath?: string
 }
 
-export type DocumentData<Schema> = Schema & {
+export type DocumentData<BaseSchema> = BaseSchema & {
 	/**
 	 * The unique key of the document
 	 *
@@ -56,7 +57,7 @@ export type DocumentData<Schema> = Schema & {
 /**
  * The data of a document
 */
-export type BaseDocument<Schema> = Document<Schema> & DocumentData<Schema>
+export type BaseDocument<BaseSchema> = DocumentClass<BaseSchema> & DocumentData<BaseSchema>
 
 
 /**
@@ -86,7 +87,7 @@ export type QueryOperators = {
 }
 
 /**
- * Add operators to each property of a Schema
+ * Add operators to each property of a BaseSchema
 */
 export type SchemaWithOperators<SchemaType> = {
 	[Property in keyof SchemaType]: SchemaType[Property] | QueryOperators;
@@ -119,26 +120,42 @@ export interface ParsedOptions {
 	storagePath: string
 }
 
+export enum SchemaPropertyType {
+	Base = 'base',
+	String = 'string',
+	Number = 'number',
+	Boolean = 'boolean',
+	Array = 'array',
+	Object = 'object'
+}
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type BaseValueType = string | number | boolean | object | BaseValueType[]
+
+// Passed as type param: new Base<SchemaParam>() or new Schema<SchemaParam>()
+export type SchemaParam = { [key: string]: string | number | boolean | SchemaParam | SchemaParam[] }
 
 export interface SchemaOptions {
 	type: string
 	required?: boolean
 	default?: BaseValueType
-	base?: Base<BaseSchema>
+	base?: BaseClass<SchemaParam>
 	baseName?: string
-	baseSchema?: Schema<BaseSchema>
+	baseSchema?: SchemaClass<SchemaParam>
 }
 
-export interface BaseSchema {
-	[key: string]: string | BaseSchema | SchemaOptions | Base<BaseSchema>
+export type BaseSchema = {
+	[key: string]: string | BaseClass<SchemaParam> | SchemaOptions | BaseSchema
+}
+
+export type RecursiveSchema<T> = {
+	// eslint-disable-next-line @typescript-eslint/ban-types
+	[K in keyof T]?: T[K] extends object | undefined ? RecursiveSchema<T[K]> : T | SchemaOptions
 }
 
 /**
  * The full schema of a document
 */
-export type FullSchema<Schema> = Schema & {
+export type FullSchema<SchemaType> = SchemaType & {
 	/**
 	 * The unique key of the document
 	 *
@@ -161,9 +178,9 @@ export interface ParsedSchemaOptions {
 	required: boolean
 	__end: boolean
 	default?: BaseValueType
-	base?: Base<BaseSchema>
+	base?: BaseClass<BaseSchema>
 	baseName?: string
-	baseSchema?: Schema<BaseSchema>
+	baseSchema?: SchemaClass<BaseSchema>
 }
 
 export interface ParsedBaseSchema {

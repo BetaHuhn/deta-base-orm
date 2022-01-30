@@ -1,4 +1,4 @@
-import { BaseSchema, ParsedBaseSchema } from './types'
+import { BaseSchema, ParsedBaseSchema, SchemaPropertyType } from './types'
 import { Base } from './Base'
 
 /**
@@ -6,6 +6,8 @@ import { Base } from './Base'
 */
 export class Schema<SchemaType> {
 	schema: ParsedBaseSchema
+
+	static Types = SchemaPropertyType
 
 	constructor(schema: BaseSchema) {
 		this.schema = this.parse(schema)

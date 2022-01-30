@@ -12,7 +12,8 @@
     "prebuild": "npm run clean",
     "start": "ts-node",
     "dev": "ts-node dev/index.ts",
-    "watch": "tsc-watch --onSuccess \"node ./example/index.js\"",
+    "dev:example": "tsc-watch --onSuccess \"node ./example/index.js\"",
+    "watch": "tsc-watch",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint ./src/ --ext .ts"
   },

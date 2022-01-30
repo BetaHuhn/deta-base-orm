@@ -1,7 +1,7 @@
 import DetaBase from 'deta/dist/types/base';
-import { Base } from './Base';
-import { Schema } from './Schema';
-import { Document } from './Document';
+import { Base as BaseClass } from './Base';
+import { Schema as SchemaClass } from './Schema';
+import { Document as DocumentClass } from './Document';
 export interface BaseOptions {
     /** Existing Deta Base instance */
     db?: DetaBase;
@@ -30,7 +30,7 @@ export interface BaseOptions {
      */
     storagePath?: string;
 }
-export declare type DocumentData<Schema> = Schema & {
+export declare type DocumentData<BaseSchema> = BaseSchema & {
     /**
      * The unique key of the document
      *
@@ -48,7 +48,7 @@ export declare type DocumentData<Schema> = Schema & {
 /**
  * The data of a document
 */
-export declare type BaseDocument<Schema> = Document<Schema> & DocumentData<Schema>;
+export declare type BaseDocument<BaseSchema> = DocumentClass<BaseSchema> & DocumentData<BaseSchema>;
 /**
  * Operators to use in a query
 */
@@ -75,7 +75,7 @@ export declare type QueryOperators = {
     $ncon?: string;
 };
 /**
- * Add operators to each property of a Schema
+ * Add operators to each property of a BaseSchema
 */
 export declare type SchemaWithOperators<SchemaType> = {
     [Property in keyof SchemaType]: SchemaType[Property] | QueryOperators;
@@ -104,22 +104,36 @@ export interface ParsedOptions {
     offline: boolean;
     storagePath: string;
 }
+export declare enum SchemaPropertyType {
+    Base = "base",
+    String = "string",
+    Number = "number",
+    Boolean = "boolean",
+    Array = "array",
+    Object = "object"
+}
 export declare type BaseValueType = string | number | boolean | object | BaseValueType[];
+export declare type SchemaParam = {
+    [key: string]: string | number | boolean | SchemaParam | SchemaParam[];
+};
 export interface SchemaOptions {
     type: string;
     required?: boolean;
     default?: BaseValueType;
-    base?: Base<BaseSchema>;
+    base?: BaseClass<SchemaParam>;
     baseName?: string;
-    baseSchema?: Schema<BaseSchema>;
+    baseSchema?: SchemaClass<SchemaParam>;
 }
-export interface BaseSchema {
-    [key: string]: string | BaseSchema | SchemaOptions | Base<BaseSchema>;
-}
+export declare type BaseSchema = {
+    [key: string]: string | BaseClass<SchemaParam> | SchemaOptions | BaseSchema;
+};
+export declare type RecursiveSchema<T> = {
+    [K in keyof T]?: T[K] extends object | undefined ? RecursiveSchema<T[K]> : T | SchemaOptions;
+};
 /**
  * The full schema of a document
 */
-export declare type FullSchema<Schema> = Schema & {
+export declare type FullSchema<SchemaType> = SchemaType & {
     /**
      * The unique key of the document
      *
@@ -139,9 +153,9 @@ export interface ParsedSchemaOptions {
     required: boolean;
     __end: boolean;
     default?: BaseValueType;
-    base?: Base<BaseSchema>;
+    base?: BaseClass<BaseSchema>;
     baseName?: string;
-    baseSchema?: Schema<BaseSchema>;
+    baseSchema?: SchemaClass<BaseSchema>;
 }
 export interface ParsedBaseSchema {
     [key: string]: ParsedSchemaOptions;
