@@ -2,8 +2,13 @@
 const DetaOrm = require('../lib/index') // const DetaOrm = require('deta-base-orm')
 
 const run = async () => {
+	const schema = new DetaOrm.Schema({
+		name: 'string',
+		age: 'number'
+	})
+
 	// Create the model
-	const Cat = new DetaOrm.Base('Cat')
+	const Cat = new DetaOrm.Base('Cat', schema)
 
 	// Create a new document of the model
 	const cat = Cat.create({
@@ -13,8 +18,6 @@ const run = async () => {
 
 	// Save the document to Deta Base
 	await cat.save()
-
-	console.log(cat)
 
 	// Delete the document from Deta Base
 	await cat.delete()
