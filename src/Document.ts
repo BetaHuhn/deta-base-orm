@@ -18,9 +18,9 @@ export class Document <SchemaType> {
 	// eslint-disable-next-line no-undef
 	[k: string]: any
 
-	_baseName: string
-	_db: DetaBase | OfflineDB
-	_opts: ParsedOptions
+	_baseName!: string
+	_db!: DetaBase | OfflineDB
+	_opts!: ParsedOptions
 
 	// Important, definite assertion needed because of Object.defineProperty
 	_baseSchema!: Schema<SchemaType>
@@ -33,9 +33,25 @@ export class Document <SchemaType> {
 	 * @internal
 	*/
 	constructor(data: SchemaType, _baseSchema: Schema<SchemaType>, _baseName: string, _db: DetaBase | OfflineDB, _opts: ParsedOptions) {
-		this._baseName = _baseName
-		this._db = _db
-		this._opts = _opts
+		// Use defineProperty to hide the property from the Class using enumerable: false
+		Object.defineProperty(this, '_baseName', {
+			enumerable: false,
+			configurable: false,
+			writable: true,
+			value: _baseName
+		})
+		Object.defineProperty(this, '_db', {
+			enumerable: false,
+			configurable: false,
+			writable: true,
+			value: _db
+		})
+		Object.defineProperty(this, '_opts', {
+			enumerable: false,
+			configurable: false,
+			writable: true,
+			value: _opts
+		})
 
 		// Store data
 		const documentData = {
