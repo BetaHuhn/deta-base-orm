@@ -1,6 +1,6 @@
 {
   "name": "deta-base-orm",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Basic ORM for Deta Base",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
