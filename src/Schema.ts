@@ -48,7 +48,7 @@ export class Schema<SchemaType> {
 				parsedSchema[key] = {
 					__end: true,
 					type: value.type || 'string',
-					required: value.required !== undefined ? value.required : value.default === undefined,
+					required: value.required !== undefined ? value.required : false,
 					default: value.default !== undefined ? value.default : undefined
 				}
 
@@ -110,31 +110,34 @@ export class Schema<SchemaType> {
 			}
 		}
 
-		Object.entries(schema).forEach(([ key, value ]) => {
+		Object.entries(schema).forEach(([ key, schemaItem ]) => {
+			const value = (data as any)[key]
 
-			// If the value is not a schema object, we need to validate it recursivly
-			if (typeof value === 'object' && value.__end === undefined) {
-				const obj = this.validate((data as any)[key], value as any)
+			// If the schemaItem is not a schema object, we need to validate it recursivly
+			if (typeof schemaItem === 'object' && schemaItem.__end === undefined) {
+				const obj = this.validate(value, schemaItem as any)
 				errors = errors.concat(obj.errors)
 				setRes(key, obj.result)
 
-			// Check if the value is required and is present
-			} else if (value.required && (data as any)[key] === undefined) {
+			// Check if the schemaItem is required and is present
+			} else if (schemaItem.required && (value === undefined || value === null)) {
 				errors.push(`Missing required field "${ key }"`)
 
 			// If no value use default value if present
-			} else if (data === undefined || (data as any)[key] === undefined) {
+			} else if (data === undefined || value === undefined) {
 				if (schema[key].default !== undefined) {
 					setRes(key, schema[key].default)
 				}
 
 			// If the value is present, validate its type
-			} else if (!checkType(value.type, (data as any)[key])) {
-				errors.push(`Invalid type for "${ key }": expected "${ value.type }", got "${ typeof (data as any)[key] }"`)
+			} else if (!checkType(schemaItem.type, value)) {
+				// If the value is not required and set to null instead of the correct type we don't need to throw an error
+				if (!schemaItem.required && value == null) return
 
+				errors.push(`Invalid type for "${ key }": expected "${ schemaItem.type }", got "${ typeof value }"`)
 			// Use the actual value
 			} else {
-				setRes(key, (data as any)[key])
+				setRes(key, value)
 			}
 		})
 

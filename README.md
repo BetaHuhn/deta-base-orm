@@ -417,7 +417,6 @@ const Base = new DetaOrm.Base(name, schema, { db })
 - Make populate work offline
 - Add populate as chained command to `find()`
 - Populate multiple paths at once
-- Fix ESM issues
 
 ## 💻 Development
 
