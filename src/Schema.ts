@@ -13,7 +13,7 @@ export class Schema<SchemaType> {
 		this.schema = this.parse(schema)
 	}
 
-	parse(schema: BaseSchema): ParsedBaseSchema {
+	parse(schema: BaseSchema, nested = false): ParsedBaseSchema {
 		const parsedSchema: any = {}
 		const validTypes = [ 'string', 'number', 'boolean', 'array', 'object', 'base' ]
 
@@ -41,7 +41,7 @@ export class Schema<SchemaType> {
 
 			// Recursivly parse none schema object
 			} else if (typeof value === 'object' && (!value.type || typeof value.type !== 'string')) {
-				parsedSchema[key] = this.parse(value as any)
+				parsedSchema[key] = this.parse(value as any, true)
 
 			// Parse schema object
 			} else {
@@ -69,12 +69,14 @@ export class Schema<SchemaType> {
 			}
 		})
 
-		// Overwrite the key as it is required and can't be changed
-		parsedSchema.key = {
-			__end: true,
-			type: 'string',
-			required: true,
-			default: undefined
+		if (!nested) {
+			// Overwrite the key as it is required and can't be changed
+			parsedSchema.key = {
+				__end: true,
+				type: 'string',
+				required: true,
+				default: undefined
+			}
 		}
 
 		return parsedSchema

@@ -6,7 +6,7 @@ export declare class Schema<SchemaType> {
     schema: ParsedBaseSchema;
     static Types: typeof SchemaPropertyType;
     constructor(schema: BaseSchema);
-    parse(schema: BaseSchema): ParsedBaseSchema;
+    parse(schema: BaseSchema, nested?: boolean): ParsedBaseSchema;
     validate(data: SchemaType, partialSchema?: ParsedBaseSchema): {
         errors: string[];
         result: SchemaType;
